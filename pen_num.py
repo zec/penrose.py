@@ -97,6 +97,10 @@ def _intervals_for_alpha():
     else:
       interval = RatInterval(mdpt, interval.high)
 
+_display_powers_of_alpha = [
+  '{}', '{}*\u03b1', '{}*\u03b1\u00b2', '{}*\u03b1\u00b3'
+]
+
 class Number:
   '''An element of the number field Q[sqrt(2*(5+sqrt(5)))]'''
   def __init__(self, e0 = 0, e1 = 0, e2 = 0, e3 = 0):
@@ -109,7 +113,13 @@ class Number:
     return 'Number({}, {}, {}, {})'.format(*[repr(q) for q in self._vec])
 
   def __str__(self):
-    return '<Number {} + {}*\u03b1 + {}*\u03b1\u00b2 + {}*\u03b1\u00b3>'.format(*[_fraction_as_string(q) for q in self._vec])
+    s = []
+    for i in range(len(self._vec)):
+      if self._vec[i] != 0:
+        s.append(_display_powers_of_alpha[i].format(_fraction_as_string(self._vec[i])))
+    if len(s) == 0: # handle the case of zero
+      s.append('0')
+    return '<Number {}>'.format(' + '.join(s))
 
   def __neg__(self):
     return Number(*[-q for q in self._vec])
