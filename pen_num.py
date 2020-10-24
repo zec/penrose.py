@@ -27,7 +27,7 @@ class RatInterval:
       self.low, self.high = Q(low), Q(high)
 
     if self.low > self.high:
-      raise ArithmeticError
+      raise ValueError
 
   def midpoint(self):
     return (self.low + self.high) / 2
@@ -219,6 +219,9 @@ one = Number(1, 0, 0, 0)
 
 # The square root of five
 sqrt5 = Number(-5, 0, Q(1,2), 0)
+
+# The golden ratio
+phi = (sqrt5 + 1) * Q(1,2)
 
 def _init_powers_of_alpha():
   _alpha4 = (-80, 0, 20, 0) # alpha^4, expressed in terms of lesser powers of alpha
