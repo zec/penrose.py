@@ -125,7 +125,7 @@ class Vector:
 
   def _do_multiplication(self, other):
     try:
-      other = Y(other):
+      other = Y(other)
     except:
       return NotImplemented
     return Vector(other * self.x, other * self.y)
@@ -138,12 +138,14 @@ class Vector:
 
   # Note the difference between here and transforming a Point
   def _do_transform(self, t):
-    return NotImplemented if not isinstance(t, AffineTransform)
+    if not isinstance(t, AffineTransform):
+      return NotImplemented
     return Vector(t.a * self.x + t.b * self.y, t.d * self.x + t.e * self.y)
 
   def transform(self, t):
     x = self._do_transform(t)
-    raise TypeError if x is NotImplemented
+    if x is NotImplemented:
+      raise TypeError
     return x
 
   def __rmatmul__(self, t):
@@ -221,11 +223,13 @@ class LineSegment:
       raise TypeError
 
   def __eq__(self, other):
-    return NotImplemented if not isinstance(other, LineSegment)
+    if not isinstance(other, LineSegment):
+      return NotImplemented
     return (self.begin == other.begin) and (self.end == other.end)
 
   def _do_addition(self, other):
-    return NotImplemented if not isinstance(other, Vector)
+    if not isinstance(other, Vector):
+      return NotImplemented
     return LineSegment(self.begin + other, self.end + other)
 
   def __add__(self, other):
@@ -235,7 +239,8 @@ class LineSegment:
     return self._do_addition(other)
 
   def _do_transform(self, t):
-    return NotImplemented if not isinstance(t, AffineTransform)
+    if not isinstance(t, AffineTransform):
+      return NotImplemented
     return LineSegment(
       self.begin.transform(t),
       self.end.transform(t)
@@ -243,7 +248,8 @@ class LineSegment:
 
   def transform(self, t):
     x = self._do_transform(t)
-    raise TypeError if x is NotImplemented
+    if x is NotImplemented:
+      raise TypeError
     return x
 
   def __rmatmul__(self, t):
@@ -270,10 +276,11 @@ class Rectangle:
     self.min_y, self.max_y = min(p1.y, p2.y), max(p1.y, p2.y)
 
   def __eq__(self, other):
-    return NotImplemented if not isinstance(other, Rectangle)
-    return (self.min_x == other.min_x) and
-           (self.max_x == other.max_x) and
-           (self.min_y == other.min_y) and
+    if not isinstance(other, Rectangle):
+      return NotImplemented
+    return (self.min_x == other.min_x) and \
+           (self.max_x == other.max_x) and \
+           (self.min_y == other.min_y) and \
            (self.max_y == other.max_y)
 
   def bbox(self):
