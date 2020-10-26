@@ -90,13 +90,15 @@ def _generating_poly(x):
 
 def _intervals_for_alpha():
   interval = RatInterval(Q(7,2), Q(4))
+  yield interval
+
   while True:
-    yield interval
     mdpt = interval.midpoint()
     if _generating_poly(mdpt) > 0:
       interval = RatInterval(interval.low, mdpt)
     else:
       interval = RatInterval(mdpt, interval.high)
+    yield interval
 
 _display_powers_of_alpha = [
   '{}', '{}*\u03b1', '{}*\u03b1\u00b2', '{}*\u03b1\u00b3'
