@@ -301,6 +301,9 @@ sqrt5 = Number(-5, 0, Q(1,2), 0)
 # The golden ratio
 phi = (sqrt5 + 1) * Q(1,2)
 
+# The inverse of the golden ratio, which conveniently is just phi-1
+inv_phi = phi - one
+
 def _init_powers_of_alpha():
   _alpha4 = (-80, 0, 20, 0) # alpha^4, expressed in terms of lesser powers of alpha
   _current_power = (1, 0, 0, 0) # start with alpha^0
