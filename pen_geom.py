@@ -182,7 +182,7 @@ class AffineTransform:
     if isinstance(a, AffineTransform):
       self.a, self.b, self.c, self.d, self.e, self.f = \
          a.a,    a.b,    a.c,    a.d,    a.e,    a.f
-    elif all([x is not None for x in [a,b,c,d,e,f]]):
+    elif all(x is not None for x in [a,b,c,d,e,f]):
       self.a, self.b, self.c, self.d, self.e, self.f = \
         Y(a),   Y(b),   Y(c),   Y(d),   Y(e),   Y(f)
     else:

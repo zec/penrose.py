@@ -123,7 +123,7 @@ class Number:
       self._vec = (Q(e0), Q(e1), Q(e2), Q(e3))
 
   def __repr__(self):
-    return 'Number({}, {}, {}, {})'.format(*[repr(q) for q in self._vec])
+    return 'Number({}, {}, {}, {})'.format(*(repr(q) for q in self._vec))
 
   def __str__(self):
     s = []
@@ -135,7 +135,7 @@ class Number:
     return '<Number {}>'.format(' + '.join(s))
 
   def __neg__(self):
-    return Number(*[-q for q in self._vec])
+    return Number(*(-q for q in self._vec))
 
   def _do_addition(self, other):
     try:
@@ -144,7 +144,7 @@ class Number:
       return NotImplemented
     v1 = self._vec
     v2 = o._vec
-    return Number(*[self._vec[i] + o._vec[i] for i in range(len(self._vec))])
+    return Number(*( self._vec[i] + o._vec[i] for i in range(len(self._vec)) ))
 
   def __add__(self, other):
     return self._do_addition(other)
@@ -160,7 +160,7 @@ class Number:
 
   def _do_multiplication(self, other):
     if isinstance(other, int) or isinstance(other, Q):
-      return Number(*[other * q for q in self._vec])
+      return Number(*(other * q for q in self._vec))
     # So, now that we've handled the simple case of multiplying
     # a Number by a rational number, we can use
     # that to handle the trickier case of two Numbers:
@@ -209,7 +209,7 @@ class Number:
   # OK, now we implement comparison functions. First off, is a
   # number less than, equal to, or greater than zero?
   def sgn(self):
-    if all([q == 0 for q in self._vec]): # exactly zero
+    if all(q == 0 for q in self._vec): # exactly zero
       return 0
     # We use successively better intervals around alpha
     # to see whether our (now known to be non-zero) Number
@@ -247,12 +247,12 @@ class Number:
     return not all([q == 0 for q in self._vec])
 
   def __float__(self):
-    return sum([float(self._vec[i]) * _float_powers_of_alpha[i] for i in range(4)])
+    return sum(float(self._vec[i]) * _float_powers_of_alpha[i] for i in range(4))
 
   def is_rational(self):
     # A Number is rational if and only if all of the {alpha, alpha^2, alpha3}
     # terms are zero:
-    return all([q == 0 for q in self._vec[1:]])
+    return all(q == 0 for q in self._vec[1:])
 
   def _do_floor(self):
     if self.is_rational():
@@ -309,6 +309,6 @@ def _init_powers_of_alpha():
     _powers_of_alpha.append(Number(*_current_power))
     # Now, muliply by alpha:
     _shift_by_alpha = (0, _current_power[0], _current_power[1], _current_power[2])
-    _current_power = tuple([_shift_by_alpha[i] + _current_power[3] * _alpha4[i] for i in range(4)])
+    _current_power = tuple(_shift_by_alpha[i] + _current_power[3] * _alpha4[i] for i in range(4))
 
 _init_powers_of_alpha()
