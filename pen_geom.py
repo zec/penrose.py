@@ -5,7 +5,7 @@ import pen_num
 from pen_num import Number as Y
 
 # Some useful trigonometric constants: sin and cos of 18 degrees,
-# and multiples thereof
+# and of angles that are multiples thereof
 cos18 = Y(0, Q(1,4), 0, 0)
 sin18 = Y(Q(-3,2), 0, Q(1,8), 0)
 
@@ -62,6 +62,11 @@ class Point:
       return NotImplemented
     return self.transform(t)
 
+  def __sub__(self, other):
+    if not isinstance(other, Point):
+      return NotImplemented
+    return Vector(self.x - other.x, self.y - other.y)
+
   def translate(self, x, y = None):
     if isinstance(x, Vector):
       x, y = x.x, x.y
@@ -108,6 +113,8 @@ class Vector:
       return Vector(self.x + other.x, self.y + other.y)
     elif isinstance(other, Point):
       return Point(self.x + other.x, self.y + other.y)
+    elif isinstance(other, AffineTransform):
+      return other.transform(translation(self))
     else:
       return NotImplemented
 
@@ -150,6 +157,20 @@ class Vector:
 
   def __rmatmul__(self, t):
     return self.transform(t)
+
+  def __or__(self, other):
+    '''Inner (dot) product of self with other'''
+
+    if not isinstance(other, Vector):
+      return NotImplemented
+    return self.x * other.x + self.y * other.y
+
+  def __xor__(self, other):
+    '''(Scalar) cross product of self with other'''
+
+    if not isinstance(other, Vector):
+      return NotImplemented
+    return self.x * other.y - self.y * other.x
 
 class AffineTransform:
   def __init__(self, a, b = None, c = None, d = None, e = None, f = None):
@@ -209,8 +230,10 @@ def scaling(sx, sy=None):
     sy = sx
   return AffineTransform(sx, 0, 0,    0, sy, 0)
 
-def translation(dx, dy):
+def translation(dx, dy = None):
   '''Returns the AffineTransform for translation by (dx,dy)'''
+  if isinstance(dx, Vector) and (dy is None):
+    dx, dy = dx.x, dx.y
   return AffineTransform(1, 0, dx,    0, 1, dy)
 
 class LineSegment:
