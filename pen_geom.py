@@ -155,6 +155,9 @@ class Vector:
       raise TypeError
     return x
 
+  def rotate(self, n):
+    return self.transform(rotation(n))
+
   def __rmatmul__(self, t):
     return self.transform(t)
 
@@ -191,7 +194,7 @@ class AffineTransform:
   def __repr__(self):
     return 'AffineTransform(a={}, b={}, c={}, d={}, e={}, f={})'.format(
       repr(self.a), repr(self.b), repr(self.c),
-      repr(self.d), repr(self.d), repr(self.f)
+      repr(self.d), repr(self.e), repr(self.f)
     )
 
   def __str__(self):
@@ -214,6 +217,10 @@ class AffineTransform:
 
   def __neg__(self):
     return self.transform(scale(-1, -1))
+
+  def det(self):
+    '''Returns the determinant of the transform'''
+    return self.a * self.e - self.b * self.d
 
 # The identity transformation
 AffineTransform.identity = AffineTransform(1, 0, 0, 0, 1, 0)
