@@ -2,6 +2,7 @@
 a useful field to work in when handling Penrose tiles'''
 
 from fractions import Fraction as Q
+from math import sqrt, floor, ceil
 
 def _fraction_as_string(q):
   if q.denominator == 1:
@@ -101,6 +102,16 @@ _display_powers_of_alpha = [
   '{}', '{}*\u03b1', '{}*\u03b1\u00b2', '{}*\u03b1\u00b3'
 ]
 
+# Our generator, as a floating-point number:
+_pre_alpha = 10.0 + 2.0 * sqrt(5.0)
+_float_alpha = sqrt(_pre_alpha)
+_float_powers_of_alpha = (
+  1.0,
+  _float_alpha,
+  _pre_alpha,
+  _float_alpha * _pre_alpha
+)
+
 class Number:
   '''An element of the number field Q[sqrt(2*(5+sqrt(5)))]'''
   def __init__(self, e0 = 0, e1 = 0, e2 = 0, e3 = 0):
@@ -183,6 +194,16 @@ class Number:
   # close to requiring a linear algebra package and implementing
   # most of a class for *general* number fields.
 
+  # In a couple of places, we need to know how a Number compares
+  # to some other number. We do that by using interval arithmetic,
+  # using ever-more-accurate intervals bounding the generator alpha
+  # to get ever-more-accurate intervals bounding self.
+  def interval_sequence(self):
+    '''Returns an interator yielding RatIntervals bounding self'''
+    v = self._vec
+    for alpha in _intervals_for_alpha():
+      yield ((v[3] * alpha + v[2]) * alpha + v[1]) * alpha + v[0] # Horner's rule
+
   # OK, now we implement comparison functions. First off, is a
   # number less than, equal to, or greater than zero?
   def sgn(self):
@@ -192,15 +213,14 @@ class Number:
     # to see whether our (now known to be non-zero) Number
     # is positive or not
     v = self._vec
-    for alpha in _intervals_for_alpha():
-      approx = ((v[3] * alpha + v[2]) * alpha + v[1]) * alpha + v[0]
+    for approx in self.interval_sequence():
       if approx.low > 0: # *definitely* positive
         return 1
       if approx.high < 0: # *definitely* negative
         return -1
       # If we get here, we don't know whether self is positive
       # or negative yet. We start another iteration,
-      # using a tighter bound on alpha.
+      # using a tighter bound on self.
 
   def __lt__(self, other):
     return (self - other).sgn() < 0
@@ -220,6 +240,52 @@ class Number:
   def __gt__(self, other):
     return (self - other).sgn() > 0
 
+  # Returns false for 0, true for all other instantiable numbers
+  def __bool__(self):
+    return not all([q == 0 for q in self._vec])
+
+  def __float__(self):
+    return sum([float(self._vec[i]) * _float_powers_of_alpha[i] for i in range(4)])
+
+  def is_rational(self):
+    # A Number is rational if and only if all of the {alpha, alpha^2, alpha3}
+    # terms are zero:
+    return all([q == 0 for q in self._vec[1:]])
+
+  def _do_floor(self):
+    if self.is_rational():
+      # when self is rational, we delegate:
+      return floor(self._vec[0])
+    else:
+      # self is not rational (and in particular, not an integer):
+      # bound it between two integers using successively tighter
+      # intervals bounding it (the non-integrality ensures we'll exit the loop):
+      v = self._vec
+      for approx in self.interval_sequence():
+        floor_low, floor_high = floor(approx.low), floor(approx.high)
+        if floor_low == floor_high:
+          return floor_low
+
+  def __floor__(self):
+    return self._do_floor()
+
+  def __ceil__(self):
+    if self.is_rational():
+      return ceil(self._vec[0])
+    else:
+      # not rational, and in particular not an integer, so:
+      return self._do_floor() + 1
+
+  # int(x) is usually truncate-to-zero, and we do likewise
+  def __int__(self):
+    flr = self._do_floor()
+    v = self._vec
+
+    # if self is non-integer and negative:
+    if ((v[0].denominator != 1) or not self.is_rational()) and self < 0:
+      return flr + 1
+    else:
+      return flr
 
 # The generator of the number field
 alpha = Number(0, 1, 0, 0)
