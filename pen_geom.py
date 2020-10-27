@@ -190,6 +190,7 @@ class AffineTransform:
         Y(a),   Y(b),   Y(c),   Y(d),   Y(e),   Y(f)
     else:
       raise TypeError
+    self._memoized = {}
 
   def __repr__(self):
     return 'AffineTransform(a={}, b={}, c={}, d={}, e={}, f={})'.format(
@@ -218,9 +219,29 @@ class AffineTransform:
   def __neg__(self):
     return self.transform(scale(-1, -1))
 
+  def _memoize_method(self, key, function):
+    if key not in self._memoized:
+      self._memoized[key] = function(self)
+    return self._memoized[key]
+
   def det(self):
     '''Returns the determinant of the transform'''
-    return self.a * self.e - self.b * self.d
+    return self._memoize_method('det', lambda t: t.a * t.e - t.b * t.d)
+
+  def is_orientation_preserving(self):
+    '''Returns whether or not the transform keeps clockwise paths clockwise'''
+    return self._memoize_method('orient', lambda t: t.det() > 0)
+
+  def is_conformal(self):
+    '''Returns whether or not the transform preserves angles'''
+    # So, a linear transform is conformal iff it scales all vectors equally, i.e.,
+    # for all vectors v, (T @ v) | (T @ v) == c * (v | v) for some constant c.
+    # Expanding out that equality in terms of the components of the transform
+    # and the vector, that turns out to be equivalent to the following predicate:
+    return self._memoize_method(
+      'conformal',
+      lambda t: (t.a*t.a + t.d*t.d == t.b*t.b + t.e*t.e) and (t.a*t.b == -(t.d*t.e))
+    )
 
 # The identity transformation
 AffineTransform.identity = AffineTransform(1, 0, 0, 0, 1, 0)
