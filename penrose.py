@@ -46,9 +46,16 @@ class TileWithMatchingRule:
     '''Returns an ID indicating the tile set this tile belongs to.'''
     raise NotImplementedError
 
+  def __str__(self):
+    ts, v, mr = self.tile_set(), self.vertices(), self.matching_rules()
+    details = '\n'.join( '  {}...{}...'.format(v[i], mr[i]) for i in range(len(v)) )
+    return '<{} (tile_set={})\n{}close\n>'.format(type(self).__name__, ts, details)
+
 class TransformableTile(TileWithMatchingRule):
-  def __init__(self, t):
-    '''Constructs a proto-tile, transformed by affine transform t'''
+  def __init__(self, t = AffineTransform.identity):
+    '''Constructs a proto-tile, transformed by affine transform t.
+    
+    The transform t must be orientation-preserving and angle-preserving.'''
 
     if (not isinstance(t, AffineTransform)):
       raise TypeError
