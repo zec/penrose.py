@@ -49,6 +49,9 @@ class Point:
       return NotImplemented
     return (self.x == other.x) and (self.y == other.y)
 
+  def __hash__(self):
+    return hash((0, self.x, self.y))
+
   def transform(self, t):
     '''Returns self transformed by affine tranformation t'''
 
@@ -104,6 +107,9 @@ class Vector:
     if not isinstance(other, Vector):
       return NotImplemented
     return (self.x == other.x) and (self.y == other.y)
+
+  def __hash__(self):
+    return hash((1, self.x, self.y))
 
   def __neg__(self):
     return Vector(-self.x, -self.y)

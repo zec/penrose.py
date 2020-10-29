@@ -231,16 +231,21 @@ class Number:
     return (self - other).sgn() <= 0
 
   def __eq__(self, other):
-    return (self - other).sgn() == 0
+    v, ov = self._vec, other._vec
+    return all(v[i] == ov[i] for i in range(4))
 
   def __ne__(self, other):
-    return (self - other).sgn() != 0
+    v, ov = self._vec, other._vec
+    return not all(v[i] == ov[i] for i in range(4))
 
   def __ge__(self, other):
     return (self - other).sgn() >= 0
 
   def __gt__(self, other):
     return (self - other).sgn() > 0
+
+  def __hash__(self):
+    return hash(self._vec)
 
   # Returns false for 0, true for all other instantiable numbers
   def __bool__(self):

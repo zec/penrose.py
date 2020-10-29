@@ -51,6 +51,44 @@ class TileWithMatchingRule:
     details = '\n'.join( '  {}...{}...'.format(v[i], mr[i]) for i in range(len(v)) )
     return '<{} (tile_set={})\n{}close\n>'.format(type(self).__name__, ts, details)
 
+  def __eq__(self, other):
+    if not isinstance(other, TileWithMatchingRule):
+      return NotImplemented
+    v,  ov  = self.vertices(),       other.vertices()
+    mr, omr = self.matching_rules(), other.matching_rules()
+    if (len(v) != len(mr)) or (len(ov) != len(omr)): # sanity check
+      raise ValueError
+    if (len(v) != len(ov)) or (len(mr) != len(omr)):
+      return False
+    n = len(v)
+
+    # It's possible that the tiles are equal, but their vertices are enumerated starting
+    # at different points. So we need to try possible rotations of relative orders--
+    # thank goodness we already require simple-connectedness and CCW vertex order:
+    first_pt = v[0]
+    for i in range(n):
+      if first_pt == ov[i]:
+        rot_v  = v[i:]  + v[:i]
+        rot_mr = mr[i:] + mr[:i]
+        if all(rot_v[j] == ov[j] and rot_mr[j] == omr[j] for j in range(n)):
+          return True
+
+    # No rotation matched:
+    return False
+
+  def __hash__(self):
+    v = self.vertices()
+    mr = self.matching_rules()
+
+    # Disambiguate the ordering of vertices/edges by starting
+    # at the lexicographically-earliest one
+    indexed_v = [(v[i].x, v[i].y, i) for i in range(len(v))]
+    idx_of_min = min(indexed_v)[2]
+    v  = v[idx_of_min:]  + v[:idx_of_min]
+    mr = mr[idx_of_min:] + mr[:idx_of_min]
+
+    return hash((tuple(v), tuple(mr)))
+
 class TransformableTile(TileWithMatchingRule):
   def __init__(self, t = AffineTransform.identity):
     '''Constructs a proto-tile, transformed by affine transform t.
