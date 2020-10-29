@@ -342,3 +342,54 @@ class Rectangle:
 
   def bbox(self):
     return self
+
+# The following functions use a list or tuple of Points to represent a polygon.
+# We assume that the polygon(s) is/are simply-connected, with the points
+# going counterclockwise around the outside of each polygon; a polygon is not
+# necessarily convex.
+
+# <https://doi.org/10.1016/S0925-7721(01)00012-8>
+def point_in_polygon(pt, poly):
+  return NotImplementedError
+
+def polygons_intersect(polyA, polyB):
+  '''Returns a tuple of four elements:
+  
+  0) Whether or not the two polygons have an intersection of non-zero area
+  1) When (0) is False, a list of matching vertices from the two polygons,
+     as ([index in polyA], [index in polyB]) tuples; when (0) is True, None
+  2) When (0) is False, a list of vertices in polyA that exist on a
+     non-endpoint of an edge of polyB, as ([index in polyA], [index in polyB])
+     tuples; when (0) is True, None
+  3) When (0) is False, a list of vertices in polyB that exist on a
+     non-endpoint of an edge of polyA, as ([index in polyB], [index in polyA])
+     tuples; when (0) is True, None
+  '''
+  return _poly_int_impl(polyA, polyB)
+
+def _poly_int_impl(polyA, polyB):
+  # Check that none of the vertices in polyA are inside polyB, and vice versa:
+  for pt in polyA:
+    if point_in_polygon(pt, polyB):
+      return (True, None, None, None)
+  for pt in polyB:
+    if point_in_polygon(pt, polyA):
+      return (True, None, None, None)
+
+  la, lb = len(polyA), len(polyB)
+  pa, pb = list(polyA) + [polyA[0]], list(polyB) + [polyB[0]] # allows us to handle edges without wrapping
+
+  # Check none of the lines have non-trivial intersections... this catches
+  # what cases of areal overlap aren't caught by point_in_polygon(),
+  # and lets us populate the 'vertices on non-endpoint of edge' lists.
+  # First off, get (oriented) direction vectors for all edges of polyA and polyB:
+  raise NotImplementedError
+
+  # See if there are matching vertices
+  pts_in_b = {polyB[i]: i for i in range(lb)} # simply-connected, so no repeats
+  matching_vertices = []
+  for i in range(la):
+    pt = polyA[i]
+    if pt in pts_in_b:
+      matching_points.append((i, pts_in_b[pt]))
+  pass
