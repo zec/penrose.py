@@ -123,26 +123,22 @@ class TransformableTile(TileWithMatchingRule):
   def scale(self, scl):
     return self.transform(pg.scaling(scl))
 
-_P2 = 2
-
 class KiteTile(TransformableTile):
   _proto_vertices = proto_kite
   _matching_rules = _match_kite
-  _tile_set = _P2
+  _tile_set = 'P2'
 
 class DartTile(TransformableTile):
   _proto_vertices = proto_dart
   _matching_rules = _match_dart
-  _tile_set = _P2
-
-_P3 = 3
+  _tile_set = 'P2'
 
 class ThickRhomb(TransformableTile):
   _proto_vertices = proto_thick
   _matching_rules = _match_thick
-  _tile_set = _P3
+  _tile_set = 'P3'
 
 class ThinRhomb(TransformableTile):
   _proto_vertices = proto_thin
   _matching_rules = _match_thin
-  _tile_set = _P3
+  _tile_set = 'P3'
