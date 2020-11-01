@@ -3,6 +3,7 @@
 from fractions import Fraction as Q
 import pen_num
 from pen_num import Number as Y
+import itertools
 
 # Some useful trigonometric constants: sin and cos of 18 degrees,
 # and of angles that are multiples thereof
@@ -85,6 +86,9 @@ class Point:
 
   def bbox(self):
     return Rectangle(self, self)
+
+  def as_offset_vector(self):
+    return Vector(self)
 
 class Vector:
   '''An offset in the two-dimensional Euclidean plane'''
@@ -250,7 +254,7 @@ class AffineTransform:
     )
 
 # The identity transformation
-AffineTransform.identity = AffineTransform(1, 0, 0, 0, 1, 0)
+identity_transform = AffineTransform(1, 0, 0, 0, 1, 0)
 
 def rotation(n):
   '''Returns the AffineTransform for rotation by n*18 degrees, n integer'''
@@ -275,7 +279,9 @@ class LineSegment:
 
   def __init__(self, begin, end):
     if isinstance(begin, Point) and isinstance(end, Point):
-      self.begin, self.end = begin, end
+      if begin == end:
+        raise ValueError
+      self.begin, self.end, self.direction = begin, end, end - begin
     else:
       raise TypeError
 
@@ -343,53 +349,214 @@ class Rectangle:
   def bbox(self):
     return self
 
-# The following functions use a list or tuple of Points to represent a polygon.
-# We assume that the polygon(s) is/are simply-connected, with the points
-# going counterclockwise around the outside of each polygon; a polygon is not
-# necessarily convex.
+def do_bboxes_overlap(a, b):
+  '''Returns whether the bounding boxes of a and b overlap.'''
+  a, b = a.bbox(), b.bbox()
+  return (a.min_x <= b.max_x) and (b.min_x <= a.max_x) and \
+         (a.min_y <= b.max_y) and (b.min_y <= a.max_y)
 
-# <https://doi.org/10.1016/S0925-7721(01)00012-8>
+# Using the solution from <https://stackoverflow.com/q/1952464>:
+def _is_iterable(i):
+  try:
+    an_iterator = iter(i)
+  except TypeError:
+    return False
+  return True
+
+# One *very* useful thing to know before going into the below code: the scalar
+# cross product of two vectors a ^ b depends on the angle of b (ang(b))
+# relative to the angle of a (ang(a)). In particular, if ang(b) is
+# n degrees counterclockwise from ang(a),
+#
+#          { positive if 0 < n < 180,
+# a ^ b is { negative if 180 < n < 360,
+#          { zero     if n == 0 or n == 180
+#
+# This means that for a directed line segment with points (begin=A, end=B)
+# and point of interest C,
+# ((B - A) ^ (C - A)).sgn() tells us which side of AB C is on, relative to
+# the vector from A to B.
+
+class Polygon:
+  '''A polygon. Assumed to be simple (no self-intersections).
+  The set of vertices is assumed to be minimal (no vertices
+  whose adjoining edges are parallel).'''
+
+  def __init__(self, *vertices):
+    if len(vertices) == 0:
+      raise ValueError
+    if len(vertices) == 1 and _is_iterable(vertices[0]):
+      vertices = vertices[0]
+    if not all(isinstance(pt, Point) for pt in vertices):
+      raise TypeError
+    if len(vertices) < 3: # polygon needs at least three vertices
+      raise ValueError
+
+    self._v = tuple(vertices)
+    self._e, self._is_convex, self._bbox = None, None, None
+
+  def vertices(self):
+    return self._v
+
+  def edges(self):
+    if self._e is None:
+      v = self._v
+      l = len(v)
+      self._e = tuple(LineSegment(v[i], v[(i+1)%l]) for i in range(l))
+    return self._e
+
+  def is_convex(self):
+    if self._is_convex is None:
+      raise NotImplementedError
+      # A simply-connected polygon is convex iff all its interior angles are
+      # less than or equal to 180 degrees, which in turn is the case iff
+      # the polygon always "turns" the same direction (left or right) at
+      # every vertex.
+      # We don't support vertices within straight-line segments, so we don't
+      # have to worry about the 180 degree condition, so:
+      edges = self._e
+      sgn_turn = (edges[-1].direction ^ edges[0].direction).sgn()
+      if sgn_turn == 0:
+        raise ValueError
+      self._is_convex = all(
+        (edges[i].direction ^ edges[i+1].direction).sgn() == sgn_turn
+        for i in range(len(edges) - 1)
+      )
+    return self._is_convex
+
+  def bbox(self):
+    if self._bbox is None:
+      v = self._v
+      min_x = min(pt.x for pt in v)
+      max_x = max(pt.x for pt in v)
+      min_y = min(pt.y for pt in v)
+      max_y = min(pt.y for pt in v)
+      self._bbox = Rectangle(min_x, min_y, max_x, max_y)
+    return self._bbox
+
+# This algorithm for determining whether a point is inside a simply-connected
+# polygon dates back to at least Shimrat (1962) and Hacker (1962);
+# this formulation comes from Jeff Erickson's notes [1].
+#
+# If we needed to handle more complicated polygons, an algorithm like that
+# in Hormann and Agathos (2001) [2] would be needed.
+#
+# [1] https://jeffe.cs.illinois.edu/teaching/comptop/2017/chapters/01-simple-polygons.pdf
+# [2] https://doi.org/10.1016/S0925-7721(01)00012-8
+
+# Helper function; returns -1 is pt lies directly below the segment (r, s),
+# 0 if pt is exactly on (r, s), and +1 otherwise.
+def _on_or_below(pt, r, s):
+  if r.x < s.x:
+    r, s = s, r
+  if (pt.x < s.x) or (pt.x >= r.x):
+    return 1
+  return ((s-r) ^ (pt-r)).sgn()
+
 def point_in_polygon(pt, poly):
-  return NotImplementedError
+  '''Returns whether Point pt is inside (+1), outside (-1) or on the
+  boundary (0) of the Polygon poly. Poly is assumed to be simply-connected.'''
+  sign = -1
+  v = poly.vertices()
+  prev_vertex = v[-1]
+  for curr_vertex in v:
+    sign *= _on_or_below(pt, prev_vertex, curr_vertex)
+    prev_vertex = curr_vertex
+  # sign is -1 if pt is outside poly, zero is pt is on the boundary of
+  # poly, and +1 if pt is inside poly.
+  return sign
 
-def polygons_intersect(polyA, polyB):
-  '''Returns a tuple of four elements:
-  
-  0) Whether or not the two polygons have an intersection of non-zero area
-  1) When (0) is False, a list of matching vertices from the two polygons,
-     as ([index in polyA], [index in polyB]) tuples; when (0) is True, None
-  2) When (0) is False, a list of vertices in polyA that exist on a
-     non-endpoint of an edge of polyB, as ([index in polyA], [index in polyB])
-     tuples; when (0) is True, None
-  3) When (0) is False, a list of vertices in polyB that exist on a
-     non-endpoint of an edge of polyA, as ([index in polyB], [index in polyA])
-     tuples; when (0) is True, None
-  '''
-  return _poly_int_impl(polyA, polyB)
+_rot90 = rotation(5) # Rotation CCW by 90 degrees
 
-def _poly_int_impl(polyA, polyB):
-  # Check that none of the vertices in polyA are inside polyB, and vice versa:
-  for pt in polyA:
-    if point_in_polygon(pt, polyB):
-      return (True, None, None, None)
-  for pt in polyB:
-    if point_in_polygon(pt, polyA):
-      return (True, None, None, None)
+def do_convex_polygons_intersect(A, B):
+  '''Returns a tuple with the following information about the intersection
+  (if any) of Polygons A and B:
+  (0) whether there's any intersection at all
+  (1) whether the intersection is of non-zero areal measure
+  (2) if there's an intersection, but of zero measure, involving
+      more than one point, a pair with the indices in A and B of
+      the edges involved; None in all other cases.
 
-  la, lb = len(polyA), len(polyB)
-  pa, pb = list(polyA) + [polyA[0]], list(polyB) + [polyB[0]] # allows us to handle edges without wrapping
+  A and B must be convex.'''
 
-  # Check none of the lines have non-trivial intersections... this catches
-  # what cases of areal overlap aren't caught by point_in_polygon(),
-  # and lets us populate the 'vertices on non-endpoint of edge' lists.
-  # First off, get (oriented) direction vectors for all edges of polyA and polyB:
-  raise NotImplementedError
+  if not (isinstance(A, Polygon) and isinstance(B, Polygon)):
+    raise TypeError
+  if not do_bboxes_overlap(A, B): # fast check
+    return (False, False, None)
+  if not (A.is_convex() and B.is_convex()):
+    raise ValueError
 
-  # See if there are matching vertices
-  pts_in_b = {polyB[i]: i for i in range(lb)} # simply-connected, so no repeats
-  matching_vertices = []
-  for i in range(la):
-    pt = polyA[i]
-    if pt in pts_in_b:
-      matching_points.append((i, pts_in_b[pt]))
-  pass
+  # We have two convex polygons; as such, we can use a test based on the
+  # Separating Axis Theorem (SAT) to determine whether two polygons overlap.
+
+  # get the list of vectors that are normal to each edge in the two polygons
+  edge_normals     = [e.direction.transform(_rot90) for e in A.edges()]
+  edge_normals.extend(e.direction.transform(_rot90) for e in B.edges())
+
+  # The SAT tells us that the two polygons (treated as including the boundary)
+  # don't overlap if and only if their projections along one or more of
+  # edge_normals don't overlap. So, we project the vertices of A and B along
+  # each normal and see whether the line segments representing the span of
+  # A and B's projections overlap.
+  #
+  # Except... we don't even need to figure out the 2-d projection vectors,
+  # because it turns out that the (directed, with sign) length of
+  # the projection of v along w is directly proportional to v | w,
+  # which is nice and quick to compute and compare.
+
+  A_v = [Vector(pt) for pt in A.vertices()]
+  B_v = [Vector(pt) for pt in B.vertices()]
+
+  edge_meetings = False
+
+  for i in range(2):
+    for n in edge_normals:
+      proj_A = [n | v for v in A_v]
+      proj_B = [n | v for v in B_v]
+      min_A, max_A = min(proj_A), max(proj_A)
+      min_B, max_B = min(proj_B), max(proj_B)
+
+      # Is no overlap between [min_A, max_A] and [min_B, max_B] for some n,
+      # these polygons don't touch anywhere.
+      if (max_A < min_B) or (max_B < min_A):
+        return (False, False, None)
+      if (max_A == min_B) or (max_B == min_A):
+        edge_meetings = True
+
+  # If we get here, one of two cases occurs:
+  # (1) areal overlap between A and B, in which case there is more than just
+  #     single-point contact between all projections of A and B
+  # (2) overlap between A and B of measure zero, in which case some vertex of
+  #     one polygon is on an edge of the other polygon... and we need to figure
+  #     out just how in order to determine whether it's just single-point
+  #     contact or non-trivial parts of two edges contacting.
+  #
+  # The value of edge_meetings distinguishes between the two cases.
+
+  if not edge_meetings: # Areal overlap
+    return (True, True, None)
+
+  # So, we have overlap, but of areal measure zero. We want to figure out
+  # whether it's just a single vertex just barely touching an edge of the
+  # other polygon, or whether two edges have lineal overlap. If it's the
+  # latter, we also want to know which edges, so we can report the result.
+  for i, ea in zip(itertools.count(), A.edges()):
+    for j, eb in zip(itertools.count(), B.edges()):
+      # Find the orientations of all endpoints w.r.t. the other edge:
+      dir_a, dir_b = ea.direction, eb.direction
+      orient = [
+        (dir_a ^ (eb.begin - ea.begin)).sgn(),
+        (dir_a ^ (eb.end   - ea.begin)).sgn(),
+        (dir_b ^ (ea.begin - eb.begin)).sgn(),
+        (dir_b ^ (ea.begin - eb.begin)).sgn()
+      ]
+      if all(s == 0 for s in orient): # If all four points are collinear
+        coord_a, coord_b = sorted([ea.begin.x, ea.end.x]), sorted([eb.begin.x, eb.end.x])
+        if (ea.begin.x == ea.end.x): # handle special case of vertical lines
+          coord_a, coord_b = sorted([ea.begin.y, ea.end.y]), sorted([eb.begin.y, eb.end.y])
+        if (coord_a[0] < coord_b[1]) and (coord_b[0] < coord_a[1]):
+          # We have overlap of lines that's more than just a single point!
+          return (True, False, (i, j))
+
+  # If we get here, no two edges meet at more than just a point:
+  return (True, False, None)

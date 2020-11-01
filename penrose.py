@@ -78,7 +78,7 @@ class TileWithMatchingRule:
     return hash((tuple(v), tuple(mr)))
 
 class TransformableTile(TileWithMatchingRule):
-  def __init__(self, t = AffineTransform.identity):
+  def __init__(self, t = pg.identity_transform):
     '''Constructs a proto-tile, transformed by affine transform t.
     
     The transform t must be orientation-preserving and angle-preserving.'''
