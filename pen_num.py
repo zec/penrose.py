@@ -36,6 +36,12 @@ class RatInterval:
   def width(self):
     return self.high - self.low
 
+  def is_subset_of(self, other):
+    return (self.low >= other.low) and (self.high <= other.high)
+
+  def __eq__(self, other):
+    return (self.low == other.low) and (self.high == other.high)
+
   def _do_addition(self, other):
     try:
       o = RatInterval(other)
@@ -231,11 +237,11 @@ class Number:
     return (self - other).sgn() <= 0
 
   def __eq__(self, other):
-    v, ov = self._vec, other._vec
+    v, ov = self._vec, Number(other)._vec
     return all(v[i] == ov[i] for i in range(4))
 
   def __ne__(self, other):
-    v, ov = self._vec, other._vec
+    v, ov = self._vec, Number(other)._vec
     return not all(v[i] == ov[i] for i in range(4))
 
   def __ge__(self, other):
