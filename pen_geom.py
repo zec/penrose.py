@@ -386,7 +386,7 @@ class Polygon:
     if len(vertices) == 0:
       raise ValueError
     if len(vertices) == 1 and _is_iterable(vertices[0]):
-      vertices = vertices[0]
+      vertices = list(vertices[0])
     if not all(isinstance(pt, Point) for pt in vertices):
       raise TypeError
     if len(vertices) < 3: # polygon needs at least three vertices
@@ -433,6 +433,13 @@ class Polygon:
       max_y = min(pt.y for pt in v)
       self._bbox = Rectangle(min_x, min_y, max_x, max_y)
     return self._bbox
+
+  def __str__(self):
+    return '<{}.{}\n  {}\n>'.format(
+      type(self).__module__,
+      type(self).__name__,
+      '\n  '.join(str(v) for v in self._v)
+    )
 
 # This algorithm for determining whether a point is inside a simply-connected
 # polygon dates back to at least Shimrat (1962) and Hacker (1962);

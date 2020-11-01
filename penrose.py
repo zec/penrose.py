@@ -3,13 +3,13 @@
 from fractions import Fraction as Q
 from pen_num import Number as Y, phi, inv_phi
 import pen_geom as pg
-from pen_geom import Point, Vector, AffineTransform
+from pen_geom import Point, Vector, AffineTransform, Polygon
 
 class TileWithMatchingRule:
   def vertices(self):
     '''Returns the list of n vertices for the tile,
     with the i'th edge being from vertex i to vertex (i+1)%n.
-    
+
     The tile is assumed to be simply-connected, with the vertices
     listed going counterclockwise around the tile exterior.'''
     raise NotImplementedError
@@ -17,7 +17,7 @@ class TileWithMatchingRule:
   def matching_rules(self):
     '''Returns the (oriented) matching rule for the n edges as integers,
     with a negative integer -i representing rule i in the opposite direction.
-    
+
     The IDs for the matching rules are assumed to be globally-unique, so
     any two instances of TileWithMatchingRule may have their rules compared.'''
     raise NotImplementedError
@@ -27,8 +27,7 @@ class TileWithMatchingRule:
     raise NotImplementedError
 
   def convex_decomposition(self):
-    '''Returns a set of polygons, each a list of Points (the vertices of the
-    polygon, going around the boundary counterclockwise), such that
+    '''Returns an iterable of Polygons such that
     (1) each polygon is convex and
     (2) the union of the *interiors* of the polygons is point-for-point
     equal to the interior of the tile'''
@@ -36,8 +35,9 @@ class TileWithMatchingRule:
 
   def __str__(self):
     ts, v, mr = self.tile_set(), self.vertices(), self.matching_rules()
+    ty = type(self)
     details = '\n'.join( '  {}...{}...'.format(v[i], mr[i]) for i in range(len(v)) )
-    return '<{} (tile_set={})\n{}close\n>'.format(type(self).__name__, ts, details)
+    return '<{}.{} (tile_set={})\n{}close\n>'.format(ty.__module__, ty.__name__, ts, details)
 
   def __eq__(self, other):
     if not isinstance(other, TileWithMatchingRule):
@@ -89,11 +89,11 @@ class TransformableTile(TileWithMatchingRule):
       raise ValueError
     self._v = tuple(pt.transform(t) for pt in self._proto_vertices)
     if self._convex_decomposition is None:
-      self._convex = (self._v,)
+      self._convex = (Polygon(self._v),)
     else:
       addl = tuple(pt.transform(t) for pt in self._additional_proto_points)
       self._convex = tuple(
-        tuple((self._v[i] if i >= 0 else addl[-i-1]) for i in idxs)
+        Polygon((self._v[i] if i >= 0 else addl[-i-1]) for i in idxs)
         for idxs in self._convex_decomposition
       )
     self._t = t
