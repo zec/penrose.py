@@ -5,33 +5,13 @@ from pen_num import Number as Y, phi, inv_phi
 import pen_geom as pg
 from pen_geom import Point, Vector, AffineTransform
 
-_origin = Point(0, 0)
-_one_x = Point(1, 0)
-_thick_diag = Vector(1, 0).rotate(4)
-_thin_diag = Vector(1, 0).rotate(2)
-
-# Coordinates for a {kite,dart} of long side-length 1,
-# going counter-clockwise around the shape
-proto_kite = (_origin, _one_x, _one_x.rotate(2), _one_x.rotate(4))
-proto_dart = (_origin, _one_x, Point(inv_phi, 0).rotate(2), _one_x.rotate(4))
-
-# Similarly, but for the {thick,thin} rhombs
-proto_thick = (_origin, _one_x, _one_x + _thick_diag, _origin + _thick_diag)
-proto_thin  = (_origin, _one_x, _one_x + _thin_diag,  _origin + _thin_diag)
-
-# Matching rules for these tiles' edges:
-_match_kite = (2, 1, -1, -2)
-_match_dart = (-2, -1, 1, 2)
-_match_thick = (3, 4, -4, -3)
-_match_thin = (3, -3, 4, -4)
-
 class TileWithMatchingRule:
   def vertices(self):
     '''Returns the list of n vertices for the tile,
     with the i'th edge being from vertex i to vertex (i+1)%n.
     
     The tile is assumed to be simply-connected, with the vertices
-    listed going counter-clockwise around the tile exterior.'''
+    listed going counterclockwise around the tile exterior.'''
     raise NotImplementedError
 
   def matching_rules(self):
@@ -44,6 +24,14 @@ class TileWithMatchingRule:
 
   def tile_set(self):
     '''Returns an ID indicating the tile set this tile belongs to.'''
+    raise NotImplementedError
+
+  def convex_decomposition(self):
+    '''Returns a set of polygons, each a list of Points (the vertices of the
+    polygon, going around the boundary counterclockwise), such that
+    (1) each polygon is convex and
+    (2) the union of the *interiors* of the polygons is point-for-point
+    equal to the interior of the tile'''
     raise NotImplementedError
 
   def __str__(self):
@@ -100,7 +88,19 @@ class TransformableTile(TileWithMatchingRule):
     if not (t.is_orientation_preserving() and t.is_conformal()):
       raise ValueError
     self._v = tuple(pt.transform(t) for pt in self._proto_vertices)
+    if self._convex_decomposition is None:
+      self._convex = (self._v,)
+    else:
+      addl = tuple(pt.transform(t) for pt in self._additional_proto_points)
+      self._convex = tuple(
+        tuple((self._v[i] if i >= 0 else addl[-i-1]) for i in idxs)
+        for idxs in self._convex_decomposition
+      )
     self._t = t
+
+  _additional_proto_points = ()
+
+  _convex_decomposition = None
 
   def vertices(self):
     return self._v
@@ -110,6 +110,9 @@ class TransformableTile(TileWithMatchingRule):
 
   def tile_set(self):
     return self._tile_set
+
+  def convex_decomposition(self):
+    return self._convex
 
   def transform(self, t):
     return type(self)(t @ self._t)
@@ -123,14 +126,41 @@ class TransformableTile(TileWithMatchingRule):
   def scale(self, scl):
     return self.transform(pg.scaling(scl))
 
+_origin = Point(0, 0)
+_one_x = Point(1, 0)
+_thick_diag = Vector(1, 0).rotate(4)
+_thin_diag = Vector(1, 0).rotate(2)
+
+# Coordinates for a {kite,dart} of long side-length 1,
+# going counter-clockwise around the shape
+proto_kite = (_origin, _one_x, _one_x.rotate(2), _one_x.rotate(4))
+proto_dart = (_origin, _one_x, Point(inv_phi, 0).rotate(2), _one_x.rotate(4))
+
+# Similarly, but for the {thick,thin} rhombs
+proto_thick = (_origin, _one_x, _one_x + _thick_diag, _origin + _thick_diag)
+proto_thin  = (_origin, _one_x, _one_x + _thin_diag,  _origin + _thin_diag)
+
+# Matching rules for these tiles' edges:
+_match_kite = (2, 1, -1, -2)
+_match_dart = (-2, -1, 1, 2)
+_match_thick = (3, 4, -4, -3)
+_match_thin = (3, -3, 4, -4)
+
 class KiteTile(TransformableTile):
   _proto_vertices = proto_kite
   _matching_rules = _match_kite
   _tile_set = 'P2'
+  # Already convex (as are {Thick,Thin}Rhomb), so no need to specify decomposition
+
+# A point on the dart tile's edge that we can use to reduce it into two
+# triangles with the needed overlap for the convex-polygon decomposition
+_dart_aux_point = _one_x + (Vector(1, 0).rotate(8))
 
 class DartTile(TransformableTile):
   _proto_vertices = proto_dart
   _matching_rules = _match_dart
+  _additional_proto_points = (_dart_aux_point,)
+  _convex_decomposition = ((0, 1, -1), (0, 2, 3))
   _tile_set = 'P2'
 
 class ThickRhomb(TransformableTile):
