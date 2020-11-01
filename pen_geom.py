@@ -544,9 +544,9 @@ def do_convex_polygons_intersect(A, B):
     return (True, True, None)
 
   # So, we have overlap, but of areal measure zero. We want to figure out
-  # whether it's just a single vertex just barely touching an edge of the
-  # other polygon, or whether two edges have lineal overlap. If it's the
-  # latter, we also want to know which edges, so we can report the result.
+  # whether it's just a single vertex just barely touching the other polygon,
+  # or whether two edges have lineal overlap. If it's the latter, we also
+  # want to know which edges, so we can report the result.
   for i, ea in zip(itertools.count(), A.edges()):
     for j, eb in zip(itertools.count(), B.edges()):
       # Find the orientations of all endpoints w.r.t. the other edge:
