@@ -82,6 +82,20 @@ class RatInterval:
   def __rmul__(self, other):
     return self._do_multiplication(other)
 
+  def __repr__(self):
+    ty = type(self)
+    return '{}.RatInterval(low={}, high={})'.format(
+      ty.__module__, repr(self.low), repr(self.high)
+    )
+
+  def __str__(self):
+    ty = type(self)
+    return '<{}.RatInterval [{}, {}]>'.format(
+      ty.__module__,
+      _fraction_as_string(self.low),
+      _fraction_as_string(self.high)
+    )
+
 # For comparisons between two unequal Number objects,
 # we use interval arithmetic to figure out which is greater...
 # but for that, we need a possibly-narrow interval for alpha=sqrt(2*(5+sqrt(5))).
