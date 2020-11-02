@@ -445,7 +445,7 @@ class Polygon:
 # polygon dates back to at least Shimrat (1962) and Hacker (1962);
 # this formulation comes from Jeff Erickson's notes [1].
 #
-# If we needed to handle more complicated polygons, an algorithm like that
+# If we needed to handle more complicated polygons, an algorithm like the one
 # in Hormann and Agathos (2001) [2] would be needed.
 #
 # [1] https://jeffe.cs.illinois.edu/teaching/comptop/2017/chapters/01-simple-polygons.pdf
