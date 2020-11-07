@@ -108,7 +108,7 @@ class Vector:
   '''An offset in the two-dimensional Euclidean plane'''
 
   def __init__(self, x, y = None):
-    if isinstance(x, Point) and (y is None):
+    if (isinstance(x, Point) or isinstance(x, Vector)) and (y is None):
       self.x, self.y = x.x, x.y
     elif all(_is_valid_number(i) for i in [x,y]):
       self.x, self.y = Y(x), Y(y)
@@ -149,7 +149,7 @@ class Vector:
     return self._do_addition(other)
 
   def __sub__(self, other):
-    return self._do_addition(self, -other)
+    return self._do_addition(-other)
 
   def __rsub__(self, other):
     return (-self)._do_addition(other)
@@ -217,6 +217,19 @@ class AffineTransform:
       raise TypeError
     self._memoized = {}
 
+  def _iter(self):
+    yield self.a
+    yield self.b
+    yield self.c
+    yield self.d
+    yield self.e
+    yield self.f
+
+  def __eq__(self, other):
+    if not isinstance(other, AffineTransform):
+      return NotImplemented
+    return all(x == y for x, y in zip(self._iter(), other._iter()))
+
   def __repr__(self):
     return 'AffineTransform(a={}, b={}, c={}, d={}, e={}, f={})'.format(
       repr(self.a), repr(self.b), repr(self.c),
@@ -242,7 +255,7 @@ class AffineTransform:
     return t.transform(self)
 
   def __neg__(self):
-    return self.transform(scale(-1, -1))
+    return self.transform(scaling(-1, -1))
 
   def _memoize_method(self, key, function):
     if key not in self._memoized:
