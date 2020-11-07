@@ -319,147 +319,241 @@ class TestTransformFunctions(TestCase):
   def test_identity_transform(self):
     cases = [
     ]
-    raise NotImplementedError
+    identity = g.identity_transform
+    for c in cases:
+      with self.subTest(trans = trans):
+        self.assertEqual(c.transform(identity), c)
+        self.assertEqual(identity @ c, c)
 
   @skip('not fully implemented yet')
   def test_rotation(self):
     cases = [
     ]
-    raise NotImplementedError
+    for theta, x, r in cases:
+      with self.subTest(x = x, theta = theta):
+        self.assertEqual(x.transform(g.rotation(theta)), r)
+        self.assertEqual(x, r.transform(g.rotation(-theta)))
 
   @skip('not fully implemented yet')
   def test_scaling(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, x, r in cases:
+      with self.subTest(x = x, args = args):
+        trans = g.scaling(*args)
+        self.assertEqual(x.transform(trans), r)
 
   @skip('not fully implemented yet')
   def test_translation(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, x, r in cases:
+      with self.subTest(x = x, args = args):
+        trans = g.translation(*args)
+        self.assertEqual(x.transform(trans), r)
 
 class TestLineSegment(TestCase):
   @skip('not fully implemented yet')
   def test_constructor_succeed(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, begin, end, d in cases:
+      with self.subTest(args = args):
+        seg = g.LineSegment(*args)
+        self.assertEqual(type(seg), g.LineSegment)
+        self.assertEqual(seg.begin, begin)
+        self.assertEqual(seg.end, end)
+        self.assertEqual(seg.direction, d)
 
   @skip('not fully implemented yet')
   def test_constructor_fail(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, ex in cases:
+      with self.subTest(args = args):
+        self.assertRaises(ex, g.LineSegment, *args)
 
   @skip('not fully implemented yet')
   def test_equality(self):
     cases = [
     ]
-    raise NotImplementedError
+    for a, b, result in cases:
+      with self.subTest(a = a, b = b):
+        self.assertEqual(a == b, result)
+        self.assertEqual(b == a, result)
+        self.assertEqual(a != b, not result)
+        self.assertEqual(b != a, not result)
 
   @skip('not fully implemented yet')
   def test_addition(self):
     cases = [
     ]
-    raise NotImplementedError
+    for seg, v, r in cases:
+      with self.subTest(seg = seg, v = v):
+        self.assertEqual(seg + v, r)
+        self.assertEqual(v + seg, r)
 
   @skip('not fully implemented yet')
   def test_transform(self):
     cases = [
     ]
-    raise NotImplementedError
+    for seg, trans, r in cases:
+      with self.subTest(seg = seg, trans = trans):
+        self.assertEqual(seg.transform(trans), r)
+        self.assertEqual(trans @ seg, r)
 
   @skip('not fully implemented yet')
   def test_bbox(self):
     cases = [
     ]
-    raise NotImplementedError
+    for seg, bbox in cases:
+      with self.subTest(seg = seg):
+        self.assertEqual(seg.bbox(), bbox)
 
 class TestRectangle(TestCase):
   @skip('not fully implemented yet')
   def test_constructor_succeed(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, minx, miny, maxx, maxy in cases:
+      with self.subTest(args = args):
+        r = g.Rectangle(*args)
+        self.assertEqual(type(r), g.Rectangle)
+        self.assertEqual(r.min_x, minx)
+        self.assertEqual(r.min_y, miny)
+        self.assertEqual(r.max_x, maxx)
+        self.assertEqual(r.max_y, maxy)
 
   @skip('not fully implemented yet')
   def test_constructor_fail(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, ex in cases:
+      with self.subTests(args = args):
+        self.assertRaises(ex, g.Rectangle, ex)
 
   @skip('not fully implemented yet')
   def test_equality(self):
     cases = [
     ]
-    raise NotImplementedError
+    for a, b, r in cases:
+      with self.subTests(a = a, b = b):
+        self.assertEqual(a == b, r)
+        self.assertEqual(b == a, r)
+        self.assertEqual(a != b, not r)
+        self.assertEqual(b != a, not r)
 
   @skip('not fully implemented yet')
   def test_bbox(self):
     cases = [
     ]
-    raise NotImplementedError
+    for rect, bbox in cases:
+      with self.subTests(rect = rect):
+        self.assertEqual(rect.bbox(), bbox)
 
 class TestDoBboxesOverlap(TestCase):
   @skip('not fully implemented yet')
   def test_do_bboxes_overlap(self):
     cases = [
     ]
-    raise NotImplementedError
+    for a, b, r in cases:
+      with self.subTests(a = a, b = b):
+        self.assertEqual(do_bboxes_overlap(a, b), r)
+        self.assertEqual(do_bboxes_overlap(b, a), r)
 
 class TestPolygon(TestCase):
+  _test_polygons = {
+  }
+
   @skip('not fully implemented yet')
   def test_constructor_succeed(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, n in cases:
+      with self.subTests(args = args):
+        poly = g.Polygon(*args)
+        self.assertEqual(type(poly), g.Polygon)
+        self.assertEqual(len(poly._v), n)
+        self.assertEqual(len(poly._e), n)
 
   @skip('not fully implemented yet')
   def test_constructor_fail(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, ex in cases:
+      with self.subTests(args = args):
+        self.assertRaises(ex, g.Polygon, *args)
 
   @skip('not fully implemented yet')
   def test_vertices(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, r in cases:
+      with self.subTest(args = args):
+        poly = g.Polygon(*args)
+        self.assertEqual(len(poly.vertices()), len(r))
+        self.assertTrue(all(v_poly == v_r for v_poly, v_r in zip(poly.vertices(), r)))
 
   @skip('not fully implemented yet')
   def test_edges(self):
     cases = [
     ]
-    raise NotImplementedError
+    for args, r in cases:
+      with self.subTest(args = args):
+        poly = g.Polygon(*args)
+        self.assertEqual(len(poly.edges()), len(r))
+        self.assertTrue(all(e_poly == e_r for e_poly, e_r in zip(poly.edges(), r)))
 
   @skip('not fully implemented yet')
   def test_is_convex(self):
     cases = [
     ]
-    raise NotImplementedError
+    for i, r in cases:
+      with self.subTest(polyName = i):
+        poly = self._test_polygons[i]
+        self.assertEqual(poly.is_convex(), r)
+        self.assertEqual(poly.is_convex(), r)
 
   @skip('not fully implemented yet')
   def test_bbox(self):
     cases = [
     ]
-    raise NotImplementedError
+    for i, bbox in cases:
+      with self.subTest(polyName = i):
+        poly = self._test_polygons[i]
+        self.assertEqual(poly.bbox(), bbox)
+        self.assertEqual(poly.bbox(), bbox)
 
 class TestPolygonAlgorithms(TestCase):
+  _test_polygons = {}
+
   @skip('not fully implemented yet')
   def test_point_in_polygon(self):
     cases = [
     ]
-    raise NotImplementedError
+    for i, coords, r in cases:
+      with self.subTest(polyName = i, x = coords[0], y = coords[1]):
+        poly = self._test_polygons[i]
+        pt = g.Point(*coords)
+        self.assertEqual(g.point_in_polygon(pt, poly), r)
 
   @skip('not fully implemented yet')
   def test_do_convex_polygons_intersect(self):
     cases = [
     ]
-    raise NotImplementedError
+    for i1, i2, r in cases:
+      with self.subTest(polyName1 = i1, polyName2 = i2):
+        poly1 = self._test_polygons[i1]
+        poly2 = self._test_polygons[i2]
+        self.assertEqual(g.do_convex_polygons_intersect(poly1, poly2), r)
+        self.assertEqual(g.do_convex_polygons_intersect(poly2, poly1), r)
 
   @skip('not fully implemented yet')
   def test_do_convex_polygons_intersect_exceptions(self):
     cases = [
     ]
-    raise NotImplementedError
+    for i1, i2, ex in cases:
+      with self.subTest(polyName1 = i1, polyName2 = i2):
+        poly1 = self._test_polygons[i1]
+        poly2 = self._test_polygons[i2]
+        self.assertRaises(ex, g.do_convex_polygons_intersect, poly1, poly2)
