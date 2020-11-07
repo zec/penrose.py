@@ -211,59 +211,94 @@ class TestPoint(TestCase):
       (P(1, 0),     V(1, 0)),
       (P(0, 1),     V(0, 1)),
       (P(31,'1/2'), V(31,Q(1,2))),
-      (P(-5, phi),    V(-5, phi))
+      (P(-5, phi),  V(-5, phi))
     ]
     for pt, vec in cases:
       with self.subTest(pt = pt):
         self.assertEqual(pt.as_offset_vector(), vec)
 
 class TestVector(TestCase):
-  @skip('not fully implemented yet')
   def test_vector_constructor_succeed(self):
     cases = [
+      (0,  (Y(0), Y(0)),       Y(0,0,0,0),      Y(0,0,0,0)),
+      (1,  (0, 0),             Y(0,0,0,0),      Y(0,0,0,0)),
+      (2,  (14, -2),           Y(14,0,0,0),     Y(-2,0,0,0)),
+      (3,  (Q(1,4),Q(3,7)),    Y(Q(1,4),0,0,0), Y(Q(3,7),0,0,0)),
+      (4,  (Y(0,1),3),         Y(0,1,0,0),      Y(3,0,0,0)),
+      (5,  (g.Vector(14,-2),), Y(14,0,0,0),     Y(-2,0,0,0)),
+      (6,  (g.Point(3,5),),    Y(3,0,0,0),      Y(5,0,0,0)),
     ]
-    for args, x, y in cases:
-      with self.subTest(args = args):
+    for i, args, x, y in cases:
+      with self.subTest(i = i, args = args):
         v = g.Vector(*args)
         self.assertEqual(type(v), g.Vector)
         self.assertEqual(v.x, x)
         self.assertEqual(v.y, y)
 
-  @skip('not fully implemented yet')
   def test_vector_constructor_fail(self):
+    V, P = g.Vector, g.Point
     cases = [
+      (0,  (),                TypeError),
+      (1,  (Y(3),),           TypeError),
+      (2,  (V(0,0), V(0,0)),  TypeError),
+      (3,  (P(3,1), P(2,-1)), TypeError),
+      (4,  (V(3,2), P(1,1)),  TypeError),
+      (5,  (V(21,45), Y(2)),  TypeError),
     ]
-    for args, ex in cases:
-      with self.subTest(args = args):
+    for i, args, ex in cases:
+      with self.subTest(i = i, args = args):
         self.assertRaises(ex, g.Vector, *args)
 
-  @skip('not fully implemented yet')
   def test_vector_equality_and_hash(self):
+    V = g.Vector
     cases = [
+      (0,  V(0, 0),                V(0, 0),          True),
+      (1,  V(Y(0,1), Y('1/2')),    V(Y(0,1),Q(1,2)), True),
+      (2,  V(2, 3),                V(3, 2),          False),
+      (3,  V(2, -3),               V(2, 3),          False),
+      (4,  V(14, 4),               g.Point(14, 4),   False),
+
+      (5,  V(Y(Q(-864,227),1),-2), V(0, -2),         False),
+      (6,  V(2, 3),                V(-2, -3),        False),
+      (7,  V(1, phi + 1),          V(1, phi + 1),    True),
     ]
-    for a, b, result in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, result in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a == b, result)
         self.assertEqual(b == a, result)
+        self.assertTrue(a == a)
+        self.assertTrue(b == b)
         if result:
           self.assertEqual(hash(a), hash(b))
 
-  @skip('not fully implemented yet')
   def test_negation(self):
+    V = g.Vector
     cases = [
+      (0,  V(0, 0),        V(0, 0)),
+      (1,  V(1, 0),        V(-1, 0)),
+      (2,  V(0, 1),        V(0, -1)),
+      (3,  V(13, sqrt5+1), V(-13, -1-sqrt5)),
+      (4,  V(5, -2),       V(-5, 2)),
+
+      (5,  V(-1, -1),      V(1, 1)),
     ]
-    for v, r in cases:
-      with self.subTest(vec = v):
+    for i, v, r in cases:
+      with self.subTest(i = i, vec = v):
         self.assertEqual(-v, r)
         self.assertEqual(v, -r)
 
-  @skip('not fully implemented yet')
   def test_addition(self):
+    V = g.Vector
     cases = [
+      (0,  V(0, 0),      V(0, 0),       V(0, 0)),
+      (1,  V(1, 0),      V(0, 1),       V(1, 1)),
+      (2,  V(Q(1,2),-4), V(-2, Q(1,3)), V(Q(-3,2), Q(-11,3))),
+      (3,  V(-5, 2),     V(5, -2),      V(0, 0)),
+      (4,  V(phi, 2),    V(-1, -1),     V(inv_phi, 1)),
     ]
-    zero = Vector(0, 0)
-    for a, b, r in cases:
-      with self.subTest(a = a, b = b):
+    zero = g.Vector(0, 0)
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a + b, r)
         self.assertEqual(b + a, r)
         self.assertEqual(a + zero, a)
@@ -271,82 +306,140 @@ class TestVector(TestCase):
         self.assertEqual(zero + a, a)
         self.assertEqual(zero + b, b)
 
-  @skip('not fully implemented yet')
   def test_subtraction(self):
+    V = g.Vector
     cases = [
+      (0,  V(5, 3),     V(0, 0),        V(5, 3)),
+      (1,  V(0, 0),     V(0, 0),        V(0, 0)),
+      (2,  V(3, 2),     V(55, Q(10,3)), V(-52, Q(-4,3))),
+      (3,  V(0, 0),     V(1, 0),        V(-1, 0)),
+      (4,  V(45, -3),   V(45, -3),      V(0, 0)),
     ]
-    zero = Vector(0, 0)
-    for a, b, r in cases:
-      with self.subTest(a = a, b = b):
+    zero = g.Vector(0, 0)
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a - b, r)
         self.assertEqual(b - a, -r)
         self.assertEqual(a - zero, a)
         self.assertEqual(b - zero, b)
         self.assertEqual(zero - a, -a)
         self.assertEqual(zero - b, -b)
+    with self.subTest(i = 999):
+      self.assertEqual(g.Point(5, 7) - V(2, 2), g.Point(3, 5))
 
-  @skip('not fully implemented yet')
   def test_scalar_multiplication(self):
+    V = g.Vector
     cases = [
+      (0,  1,      V(3, -4),         V(3, -4)),
+      (1,  phi,    V(Q(1,2), -2),    V(Q(1,2)*phi, -2*phi)),
+      (2,  Q(3,4), V(4, 15),         V(3, Q(45,4))),
+      (3,  35,     V(0, 0),          V(0, 0)),
+      (4,  0,      V(5*sqrt5, 33),   V(0, 0)),
     ]
-    zero = Vector(0, 0)
-    for a, b, r in cases:
-      with self.subTest(a = a, b = b):
+    zero = g.Vector(0, 0)
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a * b, r)
         self.assertEqual(b * a, r)
         self.assertEqual(0 * b, zero)
         self.assertEqual(1 * b, b)
 
-  @skip('not fully implemented yet')
   def test_transform(self):
+    V, AT = g.Vector, g.AffineTransform
+    T, R, S = g.translation, g.rotation, g.scaling
     cases = [
+      (0,  V(35, phi - sqrt5),   g.identity_transform,     V(35, phi-sqrt5)),
+      (1,  V(0, 0),              T(4, Q(1,2)),             V(0, 0)),
+      (2,  V(3, 4),              T(4, Q(1,2)),             V(3, 4)),
+      (3,  V(3, 4),              S(3, -5),                 V(9, -20)),
+      (4,  V(-4, 5),             AT(3,8,11, 7,-5,-1000),   V(28, -53)),
+
+      (5,  V(1, 1),              R(5),                     V(-1, 1)),
+      (6,  V(1, 2),              R(15),                    V(2, -1)),
     ]
-    for vec, trans, r in cases:
-      with self.subTest(vec = vec, trans = trans):
+    for i, vec, trans, r in cases:
+      with self.subTest(i = i, vec = vec, trans = trans):
         self.assertEqual(vec.transform(trans), r)
         self.assertEqual(trans @ vec, r)
 
-  @skip('not fully implemented yet')
   def test_rotate(self):
+    V = g.Vector
     cases = [
+      (0,  V(0, 0),        3,   V(0, 0)),
+      (1,  V(0, 0),        -14, V(0, 0)),
+      (2,  V(phi, Q(1,2)), -5,  V(Q(1,2), -phi)),
+      (3,  V(1, 0),        10,  V(-1, 0)),
+      (4,  V(4, 4),        -1,  V(Y(-6,1,Q(1,2),0),Y(6,1,Q(-1,2),0))),
     ]
-    for vec, theta, result in cases:
-      with self.subTest(vec = vec, theta = theta):
+    for i, vec, theta, result in cases:
+      with self.subTest(i = i, vec = vec, theta = theta):
         self.assertEqual(vec.rotate(theta), result)
 
-  @skip('not fully implemented yet')
   def test_inner_product(self):
+    V = g.Vector
     cases = [
+      (0,  V(0, 0),        V(5, 2),        Y(0)),
+      (1,  V(1, 0),        V(1, 0),        1),
+      (2,  V(1, 0),        V(0, 1),        0),
+      (3,  V(1, 2),        V(-2, 3),       4),
+      (4,  V(phi, 0),      V(-inv_phi, 0), -1),
+
+      (5,  V(33, 14),      V(1, Q(-1,2)),  26),
     ]
-    for a, b, r in cases:
-      with self.subTest(a = a, b = b):
+    zero = g.Vector(0, 0)
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a | b, r)
         self.assertEqual(b | a, r)
         self.assertEqual((-a) | b, -r)
         self.assertEqual(a | (-b), -r)
         self.assertEqual((3*a) | b, 3*r)
+        self.assertEqual(a | zero, 0)
+        self.assertEqual(b | zero, 0)
 
-  @skip('not fully implemented yet')
   def test_cross_product(self):
+    V = g.Vector
     cases = [
+      (0,  V(0, 0),    V(0, 0),    0),
+      (1,  V(1, 0),    V(0, 1),    1),
+      (2,  V(1, 0),    V(0, -1),   -1),
+      (3,  V(1, 1),    V(0, 1),    1),
+      (4,  V(5, 7),    V(5, 7),    0),
+
+      (5,  V(12, -3),  V(-5, 14),  153),
+      (6,  V(phi, 1),  V(-1, phi), phi + 2),
     ]
-    for a, b, r in cases:
-      with self.subTest(a = a, b = b):
+    zero = g.Vector(0, 0)
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a ^ b, r)
         self.assertEqual(b ^ a, -r)
         self.assertEqual((-a) ^ b, -r)
         self.assertEqual(a ^ (-b), -r)
         self.assertEqual((3*a) ^ b, 3*r)
+        self.assertEqual(a ^ zero, 0)
+        self.assertEqual(b ^ zero, 0)
+        self.assertEqual(a ^ a, 0)
+        self.assertEqual(b ^ b, 0)
 
 class TestAffineTransform(TestCase):
-  @skip('not fully implemented yet')
   def test_transform_constructor_succeed(self):
+    AT = g.AffineTransform
     cases = [
+      ((1,2,3, 4,5,6),
+          1,        2,        3,        4,        5,        6),
+      ((phi,Y(1,-1),Q(1,3), 33,Q(-88,3),Y(4)),
+          phi,      Y(1,-1),  Q(1,3),   33,       Q(-88,3), 4),
+      ((AT(1,2,3, 4,5,6),),
+          1,        2,        3,        4,        5,        6),
     ]
     for args, a, b, c, d, e, f in cases:
       with self.subTest(args = args):
         trans = g.AffineTransform(*args)
         self.assertEqual(type(trans), g.AffineTransform)
+        self.assertTrue(all(
+          type(x) == Y for x in [trans.a,trans.b,trans.c,trans.d,trans.e,trans.f]
+        ))
         self.assertEqual(trans.a, a)
         self.assertEqual(trans.b, b)
         self.assertEqual(trans.c, c)
@@ -354,20 +447,52 @@ class TestAffineTransform(TestCase):
         self.assertEqual(trans.e, e)
         self.assertEqual(trans.f, f)
 
-  @skip('not fully implemented yet')
   def test_transform_constructor_fail(self):
+    AT = g.AffineTransform
     cases = [
+      (0,  (1, 2, 3, 4),           TypeError),
+      (1,  (1, 2, 3, 4, 5, False), TypeError),
+      (2,  (15,),                  TypeError),
+      (3,  (),                     TypeError),
+      (4,  (AT(0,0,0,0,0,0),1),    TypeError),
+
+      (5,  (None, 'hi there!'),    TypeError),
     ]
-    for args, ex in cases:
-      with self.subTest(args = args):
+    for i, args, ex in cases:
+      with self.subTest(i = i, args = args):
         self.assertRaises(ex, g.AffineTransform, *args)
 
-  @skip('not fully implemented yet')
-  def test_transform(self):
+  def test_equals(self):
+    AT = g.AffineTransform
     cases = [
+      (0,  AT(1,2,3, 4,5,6),           AT(1,2,3, 4,5,6),           True),
+      (1,  AT(Q(1,2),0,0, 0,Q(1,2),0), AT(Q(1,2),0,0, 0,Q(1,2),0), True),
+      (2,  AT(1,0,0, 0,1,0),           AT(1,0,1, 0,1,0),           False),
+      (3,  AT(0,0,0, 0,0,0),           AT(1,2,3, 4,5,6),           False),
+      (4,  AT(3,3,1, 3,3,2),           AT(3,3,1, 3,0,2),           False),
     ]
-    for t1, t2, t3 in cases:
-      with self.subTest(t1 = t1, t2 = t2):
+    for i, t1, t2, r in cases:
+      with self.subTest(i = i, t1 = str(t1), t2 = str(t2)):
+        self.assertEqual(t1 == t2, r)
+        self.assertEqual(t2 == t1, r)
+        self.assertTrue(t1 == t1)
+        self.assertTrue(t2 == t2)
+
+  def test_transform(self):
+    AT, T, R, S = g.AffineTransform, g.translation, g.rotation, g.scaling
+    cases = [
+      (0,  AT(1,2,3, 4,5,6),    AT(3,4,8, -1,2,-12),     AT(19,26,41, 7,8,-3)),
+      (1,  AT(1,0,0, 0,1,0),    AT(0,0,0, 0,0,0),        AT(0,0,0, 0,0,0)),
+      (2,  T(1, 2),             T(5, 7),                 T(6, 9)),
+      (3,  T(-1, 3),            S(5),                    T(-5,15)@S(5)),
+      (4,  R(10),               S(-1),                   g.identity_transform),
+
+      (5,  S(-2,2),             S(Q(-1,3),1),            S(Q(2,3),2)),
+      (6,  R(5),                R(4),                    R(9)),
+      (7,  T(1,1),              R(5),                    T(-1,1)@R(5)),
+    ]
+    for i, t1, t2, t3 in cases:
+      with self.subTest(i = i, t1 = str(t1), t2 = str(t2)):
         self.assertEqual(t1.transform(t2), t3)
         self.assertEqual(t2 @ t1, t3)
         self.assertEqual(t1.transform(g.identity_transform), t1)
@@ -375,69 +500,131 @@ class TestAffineTransform(TestCase):
         self.assertEqual(g.identity_transform.transform(t1), t1)
         self.assertEqual(g.identity_transform.transform(t2), t2)
 
-  @skip('not fully implemented yet')
   def test_negation(self):
+    AT, R, S = g.AffineTransform, g.rotation, g.scaling
     cases = [
+      (0,  AT(1,0,0, 0,1,0),         AT(-1,0,0, 0,-1,0)),
+      (1,  AT(1,0,2, 0,1,1),         AT(-1,0,-2, 0,-1,-1)),
+      (2,  AT(3,3,5, 3,7,0),         AT(-3,-3,-5, -3,-7,0)),
+      (3,  R(3),                     R(13)),
+      (4,  S(1,-1),                  S(-1,1)),
+
+      (5,  S(Q(1,3)),                S(Q(-1,3))),
     ]
-    for trans, result in cases:
-      with self.subTest(trans = trans):
+    for i, trans, result in cases:
+      with self.subTest(i = i, trans = str(trans)):
         self.assertEqual(-trans, result)
         self.assertEqual(trans, -result)
 
-  @skip('not fully implemented yet')
   def test_determinant(self):
+    AT, T, R, S = g.AffineTransform, g.translation, g.rotation, g.scaling
     cases = [
+      (0,  AT(3,3,5, 7,-2,188),  Y(-27)),
+      (1,  R(3),                 1),
+      (2,  R(15),                1),
+      (3,  T(2324, 500*phi),     1),
+      (4,  AT(1,1,2, 0,0,234),   0),
+
+      (5,  T(-55, 55),           1),
+      (6,  S(-1),                1),
+      (7,  S(-2, 3),             -6),
+      (8,  S(14),                196),
     ]
-    for trans, det in cases:
-      with self.subTest(trans = trans):
+    for i, trans, det in cases:
+      with self.subTest(i = i, trans = str(trans)):
         self.assertEqual(trans.det(), det)
         self.assertEqual(trans.det(), det)    # sanity check for memoization
+        self.assertEqual(type(trans.det()), Y)
         self.assertEqual((-trans).det(), det)
 
-  @skip('not fully implemented yet')
   def test_is_orientation_preserving(self):
+    AT, T, R, S = g.AffineTransform, g.translation, g.rotation, g.scaling
     cases = [
+      (0,  AT(3,0,23, 0,2,-1000),    True),
+      (1,  R(14),                    True),
+      (2,  T(23523, Y(0,-2334)),     True),
+      (3,  g.identity_transform,     True),
+      (4,  S(100),                   True),
+
+      (5,  S(-100),                  True),
+      (6,  S(-1, 1),                 False),
+      (7,  S(-5, -7),                True),
+      (8,  R(2) @ S(5),              True),
     ]
-    for trans, result in cases:
-      with self.subTest(trans = trans):
+    for i, trans, result in cases:
+      with self.subTest(i = i, trans = str(trans)):
         self.assertEqual(trans.is_orientation_preserving(), result)
         self.assertEqual(trans.is_orientation_preserving(), result)
 
-  @skip('not fully implemented yet')
   def test_is_conformal(self):
+    AT, T, R, S = g.AffineTransform, g.translation, g.rotation, g.scaling
     cases = [
+      (0,  g.identity_transform,      True),
+      (1,  S(-5),                     True),
+      (2,  S(15),                     True),
+      (3,  S(-5, 5),                  True),
+      (4,  S(0),                      True),
+      (5,  AT(3,3,2, 3,3,18),         False),
+      (6,  T(5, phi*3),               True),
+      (7,  R(1),                      True),
+      (8,  AT(0,0,8, 0,1,9),          False),
     ]
-    for trans, result in cases:
-      with self.subTest(trans = trans):
+    for i, trans, result in cases:
+      with self.subTest(i = i, trans = str(trans)):
         self.assertEqual(trans.is_conformal(), result)
         self.assertEqual(trans.is_conformal(), result)
 
 class TestTransformFunctions(TestCase):
-  @skip('not fully implemented yet')
   def test_identity_transform(self):
     cases = [
+      g.Point(25, Q(-5,6)),
+      g.Vector(4, 6),
+      g.AffineTransform(1,2,3, 4,5,6),
+
+      g.Point(0, 0),
+      g.Point(1, 0),
+      g.Point(0, 1),
+
+      g.Vector(0, 0),
+      g.Vector(1, 0),
+      g.Vector(0, 1),
     ]
     identity = g.identity_transform
     for c in cases:
-      with self.subTest(trans = trans):
+      with self.subTest(case = str(c)):
         self.assertEqual(c.transform(identity), c)
         self.assertEqual(identity @ c, c)
 
-  @skip('not fully implemented yet')
   def test_rotation(self):
+    P, V, AT = g.Point, g.Vector, g.AffineTransform
     cases = [
+      (0,  0,   P(1, 0),          P(1, 0)),
+      (1,  5,   P(1, 0),          P(0, 1)),
+      (2,  -15, P(0, 1),          P(-1, 0)),
+      (3,  0,   V(0, 2),          V(0, 2)),
+      (4,  1,   V(0, 3),          V(Y(Q(9,2),0,Q(-3,8),0), Y(0,Q(3,4)))),
+
+      (5,  10,  V(3, 55),         V(-3, -55)),
+      (6,  5,   AT(3,0,2, 0,3,8), AT(0,-3,-8, 3,0,2)),
     ]
-    for theta, x, r in cases:
-      with self.subTest(x = x, theta = theta):
+    for i, theta, x, r in cases:
+      with self.subTest(i = i, x = str(x), theta = theta):
         self.assertEqual(x.transform(g.rotation(theta)), r)
         self.assertEqual(x, r.transform(g.rotation(-theta)))
 
-  @skip('not fully implemented yet')
   def test_scaling(self):
+    V, P, S = g.Vector, g.Point, g.scaling
     cases = [
+      (0,  (1,),      V(1, 0),      V(1, 0)),
+      (1,  (1,),      V(0, 1),      V(0, 1)),
+      (2,  (2, 3),    V(4, 5),      V(8, 15)),
+      (3,  (-2,),     P(1, 2),      P(-2, -4)),
+      (4,  (1, 4),    S(Q(1,2)),    S(Q(1,2),2)),
+
+      (5,  (-2,),     P(1, 17),     P(-2, -34)),
     ]
-    for args, x, r in cases:
-      with self.subTest(x = x, args = args):
+    for i, args, x, r in cases:
+      with self.subTest(i = i, x = str(x), args = args):
         trans = g.scaling(*args)
         self.assertEqual(x.transform(trans), r)
 
@@ -547,7 +734,7 @@ class TestRectangle(TestCase):
     ]
     for rect, bbox in cases:
       with self.subTests(rect = rect):
-        self.assertEqual(rect.bbox(), bbox)
+        self.assertEqual(rect.bbox(), rect)
 
 class TestDoBboxesOverlap(TestCase):
   @skip('not fully implemented yet')
@@ -623,7 +810,9 @@ class TestPolygon(TestCase):
         self.assertEqual(poly.bbox(), bbox)
 
 class TestPolygonAlgorithms(TestCase):
-  _test_polygons = {}
+  _test_polygons = {
+    'unit-pentagon': g.Polygon(g.rotation(4*n) @ g.Point(1, 0) for n in range(5)),
+  }
 
   @skip('not fully implemented yet')
   def test_point_in_polygon(self):
