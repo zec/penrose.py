@@ -28,13 +28,27 @@ def _populate_mul18():
 
 _populate_mul18()
 
+_valid_numerical_types = {int, float, Q, Y}
+
+def _is_valid_number(x):
+  ty = type(x)
+  if ty in _valid_numerical_types:
+    return True
+  elif ty is str:
+    try:
+      q = Q(x)
+      return True
+    except ValueError:
+      return False
+  return False
+
 class Point:
   '''A point on the two-dimensional Euclidean plane'''
 
   def __init__(self, x, y = None):
-    if isinstance(x, Point):
+    if isinstance(x, Point) and (y is None):
       self.x, self.y = x.x, x.y
-    elif (x is not None) and (y is not None):
+    elif all(_is_valid_number(i) for i in [x,y]):
       self.x, self.y = Y(x), Y(y)
     else:
       raise TypeError
@@ -72,7 +86,7 @@ class Point:
     return Vector(self.x - other.x, self.y - other.y)
 
   def translate(self, x, y = None):
-    if isinstance(x, Vector):
+    if isinstance(x, Vector) and (y is None):
       x, y = x.x, x.y
     elif (x is not None) and (y is not None):
       x, y = Y(x), Y(y)
@@ -96,7 +110,7 @@ class Vector:
   def __init__(self, x, y = None):
     if isinstance(x, Point) and (y is None):
       self.x, self.y = x.x, x.y
-    elif (x is not None) and (y is not None):
+    elif all(_is_valid_number(i) for i in [x,y]):
       self.x, self.y = Y(x), Y(y)
     else:
       raise TypeError
@@ -192,10 +206,11 @@ class AffineTransform:
     construct the affine transformation that takes (x, y) to
     (a*x + b*y + c, d*x + e*y + f)'''
 
-    if isinstance(a, AffineTransform):
+    if isinstance(a, AffineTransform) \
+       and all(x is None for x in [b,c,d,e,f]):
       self.a, self.b, self.c, self.d, self.e, self.f = \
          a.a,    a.b,    a.c,    a.d,    a.e,    a.f
-    elif all(x is not None for x in [a,b,c,d,e,f]):
+    elif all(_is_valid_number(x) for x in [a,b,c,d,e,f]):
       self.a, self.b, self.c, self.d, self.e, self.f = \
         Y(a),   Y(b),   Y(c),   Y(d),   Y(e),   Y(f)
     else:
@@ -331,8 +346,10 @@ class Rectangle:
       self._populate_self(p1, p1 + p2)
     elif isinstance(p2, Point) and isinstance(p1, Vector):
       self._populate_self(p2, p2 + p1)
+    elif all(_is_valid_number(i) for i in [p1,p2,x2,y2]):
+      self._populate_self(Point(Y(p1), Y(p2)), Point(Y(x2),Y(y2)))
     else:
-      self._populate_self({x: Y(p1), y: Y(p2)}, {x: Y(x2), y: Y(y2)})
+      raise TypeError
 
   def _populate_self(self, p1, p2):
     self.min_x, self.max_x = min(p1.x, p2.x), max(p1.x, p2.x)
