@@ -12,9 +12,15 @@ class PenGeomSanityCheck(TestCase):
   #  self.assertTrue(False)
 
 class TestPoint(TestCase):
-  @skip('not fully implemented yet')
   def test_point_constructor_succeed(self):
     cases = [
+      ( (Y(0), Y(0)),             Y(0, 0, 0, 0),        Y(0, 0, 0, 0) ),
+      ( (Y(1), Y(-4)),            Y(1, 0, 0, 0),        Y(-4, 0, 0, 0) ),
+      ( (Y(0,2,0,0), Y(0,0,0,1)), Y(0, 2, 0, 0),        Y(0, 0, 0, 1) ),
+      ( (Q(-1,3), Q(4, 3)),       Y(Q(-1,3), 0, 0, 0),  Y(Q(4,3), 0, 0, 0) ),
+      ( (5, 0),                   Y(5, 0, 0, 0),        Y(0, 0, 0, 0) ),
+      ( (g.Point(5, 0),),         Y(5, 0, 0, 0),        Y(0, 0, 0, 0) ),
+      ( ('1/2', 2),               Y(Q(1,2), 0, 0, 0),   Y(2, 0, 0, 0) ),
     ]
     for args, x, y in cases:
       with self.subTest(args = args):
@@ -23,97 +29,189 @@ class TestPoint(TestCase):
         self.assertEqual(pt.x, x)
         self.assertEqual(pt.y, y)
 
-  @skip('not fully implemented yet')
   def test_point_constructor_fail(self):
     cases = [
+      ( (),                   TypeError ),
+      ( ((), ()),             TypeError ),
+      ( (Y(42),),             TypeError ),
+      ( (Y(14), False),       TypeError ),
+      ( (g.Point(1,1), 0),    TypeError ),
+      ( (g.Vector(1,1),),     TypeError ),
+      ( ('lkaskfdj',),        TypeError ),
+      ( ('bleh', True),       TypeError ),
+      ( ('xyzzy', 'plugh'),   TypeError ),
     ]
     for args, ex in cases:
       with self.subTest(args = args):
         self.assertRaises(ex, g.Point, *args)
 
-  @skip('not fully implemented yet')
   def test_point_equality_and_hash(self):
+    P = g.Point
     cases = [
+      (0,  P(3, 4),              P(Y(3,0,0,0), Y(4,0,0,0)),   True),
+      (1,  P(Y(0,1), 1),         P(Y(0,1,0,0), Y(1,0,0,0)),   True),
+      (2,  P(3, 5),              P(3, 4),                     False),
+      (3,  P(Y('-864/227',1),0), P(Y('-863/227',1),0),        False),
+      (4,  P(Y('-864/227',1),0), P(0, 0),                     False),
+      (5,  P(2, 3),              P(3, 2),                     False),
+      (6,  P('32/4', -2),        P(8, '-2'),                  True),
+      (7,  P(1, 1),              P(1, 1),                     True),
+      (8,  P(phi, -phi),         P(phi, -phi),                True),
+      (9,  P(-phi, phi),         P(-phi, phi),                True),
+      (10, P(phi, -phi),         P(-phi, phi),                False),
+      (11, P(phi, phi),          P(-phi, -phi),               False),
+      (12, P(1, 0),              g.Vector(1, 0),              False),
     ]
-    for a, b, result in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, result in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a == b, result)
         self.assertEqual(b == a, result)
         self.assertEqual(a != b, not result)
         self.assertEqual(b != a, not result)
+        self.assertTrue(a == a)
+        self.assertTrue(b == b)
         if result:
           self.assertEqual(hash(a), hash(b))
 
-  @skip('not fully implemented yet')
   def test_transform(self):
+    P, AT, ident = g.Point, g.AffineTransform, g.identity_transform
+    T, R, S      = g.translation, g.rotation, g.scaling
     cases = [
+      (0,  P(0, 0),     ident,            P(0, 0)),
+      (1,  P(phi, 1),   ident,            P(phi, 1)),
+      (2,  P(2, -3),    ident,            P(2, -3)),
+      (3,  P(0, 0),     AT(0,2,3, 3,0,1), P(3, 1)),
+      (4,  P(1, 0),     AT(0,2,3, 3,0,1), P(3, 4)),
+      (5,  P(0, 1),     AT(0,2,3, 3,0,1), P(5, 1)),
+      (6,  P(1, 1),     R(5),             P(-1, 1)),
+      (7,  P(5, 4),     R(-5) @ T(1,1),   P(5, -6)),
+      (8,  P(-1, -1),   S(phi),           P(-phi, -phi)),
     ]
-    for pt, trans, result in cases:
-      with self.subTest(pt = pt, trans = trans):
+    for i, pt, trans, result in cases:
+      with self.subTest(i = i, pt = pt, trans = trans):
         self.assertEqual(pt.transform(trans), result)
         self.assertEqual(trans @ pt, result)
 
-  @skip('not fully implemented yet')
   def test_subtraction_succeed(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (0,  P(2, 3),     P(0, 0),       V(2, 3)),
+      (1,  P(25, -9),   P(2, -sqrt5),  V(23, -9 + sqrt5)),
+      (2,  P(35, 2),    P(23, 24),     V(12, -22)),
     ]
-    for a, b, c in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, c in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a - b, c)
+        self.assertEqual(b - a, -c)
 
-  @skip('not fully implemented yet')
   def test_subtraction_fail(self):
+    P, AT = g.Point, g.AffineTransform
     cases = [
+      (0,  P(0, 0),      Y(0),            TypeError),
+      (1,  P(35, 0),     AT(1,1,1,2,2,2), TypeError),
+      (2,  P(25, -24),   'hello, world',  TypeError),
+      (3,  Q(25),        P(0, 0),         TypeError),
     ]
-    for a, b, ex in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, ex in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertRaises(ex, (lambda x, y: x - y), a, b)
 
-  @skip('not fully implemented yet')
   def test_addition_succeed(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (0,  P(0, 0),          V(0, 0),     P(0, 0)),
+      (1,  P(0, 0),          V(254, -3),  P(254, -3)),
+      (2,  P(14, phi),       V(-14, 0),   P(0, phi)),
+      (3,  P(Y(0,1),Q(1,3)), V(2, 3),     P(Y(2,1), Y(Q(10,3)))),
     ]
-    for a, b, c in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, c in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertEqual(a + b, c)
         self.assertEqual(b + a, c)
 
-  @skip('not fully implemented yet')
   def test_addition_fail(self):
+    P = g.Point
     cases = [
+      (0,  P(0, 0),       P(0, 0),       TypeError),
+      (1,  P(15, 2),      P(-15, -2),    TypeError),
+      (2,  P(20, 2),      Y(-23),        TypeError),
+      (3,  P(3, -3),      False,         TypeError),
     ]
-    for a, b, ex in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, ex in cases:
+      with self.subTest(i = i, a = a, b = b):
         self.assertRaises(ex, (lambda x, y: x + y), a, b)
         self.assertRaises(ex, (lambda x, y: x + y), b, a)
 
-  @skip('not fully implemented yet')
   def test_translate(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (0,  P(0, 0),     (0, 0),         P(0, 0)),
+      (1,  P(0, 0),     (phi, -sqrt5),  P(phi, -sqrt5)),
+      (2,  P(-4, 2),    (1, 1),         P(-3, 3)),
+      (3,  P(23, 2),    (V(2, 4),),     P(25, 6)),
     ]
-    for pt, args, result in cases:
-      with self.subTest(pt = pt, args = args):
+    for i, pt, args, result in cases:
+      with self.subTest(i = i, pt = pt, args = args):
         self.assertEqual(pt.translate(*args), result)
 
-  @skip('not fully implemented yet')
-  def test_rotate(self):
+  def test_translate_fail(self):
+    P, V, R = g.Point, g.Vector, g.rotation
     cases = [
+      (0,  P(0, 0),    (0,),             TypeError),
+      (1,  P(2, 3),    (0,),             TypeError),
+      (2,  P(-3, 2),   (Y(23),),         TypeError),
+      (3,  P(1, 1),    (R(7), 2),        TypeError),
+      (4,  P(5, 6),    (V(1,1), V(0,0)), TypeError),
+      (5,  P(2, 43),   (4, '1/q'),       ValueError),
+      (6,  P(2, 4),    (V(2,3), 555),    TypeError),
+      (7,  P(23, 4),   (),               TypeError),
     ]
-    for pt, theta, result in cases:
-      with self.subTest(pt = pt, theta = theta):
+    for i, pt, args, ex in cases:
+      with self.subTest(i = i, pt = pt, args = args):
+        self.assertRaises(ex, (lambda p, a: p.translate(*a)), pt, args)
+
+  def test_rotate(self):
+    P = g.Point
+    cases = [
+      (0,  P(0, 0),    0,     P(0, 0)),
+      (1,  P(0, 0),    4,     P(0, 0)),
+      (2,  P(1, 0),    0,     P(1, 0)),
+      (3,  P(1, 0),    5,     P(0, 1)),
+      (4,  P(1, 0),    10,    P(-1, 0)),
+      (5,  P(1, 0),    15,    P(0, -1)),
+      (6,  P(1, 0),    20,    P(1, 0)),
+      (7,  P(0, 1),    0,     P(0, 1)),
+      (8,  P(0, 1),    5,     P(-1, 0)),
+      (9,  P(0, 1),    10,    P(0, -1)),
+      (10, P(0, 1),    15,    P(1, 0)),
+      (11, P(0, 1),    20,    P(0, 1)),
+      (12, P(0, 1),    45,    P(-1, 0)),
+      (13, P(0, 1),    -15,   P(-1, 0)),
+      (14, P(4, 0),    1,     P(Y(0,1), Y(-6,0,Q(1,2)))),
+    ]
+    for i, pt, theta, result in cases:
+      with self.subTest(i = i, pt = pt, theta = theta):
         self.assertEqual(pt.rotate(theta), result)
 
-  @skip('not fully implemented yet')
   def test_bbox(self):
     cases = [
+      (0,  0,   0),
+      (1,  23,  4),
+      (2,  -23, -234),
+      (3,  phi, -sqrt5),
     ]
-    for x, y, bbox in cases:
-      with self.subTest(x = x, y = y):
+    for i, x, y in cases:
+      with self.subTest(i = i, x = x, y = y):
         self.assertEqual(g.Point(x, y).bbox(), g.Rectangle(x, y, x, y))
 
-  @skip('not fully implemented yet')
   def test_as_offset_vector(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (P(0, 0),     V(0, 0)),
+      (P(1, 0),     V(1, 0)),
+      (P(0, 1),     V(0, 1)),
+      (P(31,'1/2'), V(31,Q(1,2))),
+      (P(-5, phi),    V(-5, phi))
     ]
     for pt, vec in cases:
       with self.subTest(pt = pt):
