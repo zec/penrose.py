@@ -6,6 +6,9 @@ import pen_geom as pg
 from pen_geom import Point, Vector, AffineTransform, Polygon
 
 class TileWithMatchingRule:
+  def __init__(self):
+    self.__hash = None
+
   def vertices(self):
     '''Returns the list of n vertices for the tile,
     with the i'th edge being from vertex i to vertex (i+1)%n.
@@ -65,17 +68,20 @@ class TileWithMatchingRule:
     return False
 
   def __hash__(self):
-    v = self.vertices()
-    mr = self.matching_rules()
+    if self.__hash is None:
+      v = self.vertices()
+      mr = self.matching_rules()
 
-    # Disambiguate the ordering of vertices/edges by starting
-    # at the lexicographically-earliest one
-    indexed_v = [(v[i].x, v[i].y, i) for i in range(len(v))]
-    idx_of_min = min(indexed_v)[2]
-    v  = v[idx_of_min:]  + v[:idx_of_min]
-    mr = mr[idx_of_min:] + mr[:idx_of_min]
+      # Disambiguate the ordering of vertices/edges by starting
+      # at the lexicographically-earliest one
+      indexed_v = [(v[i].x, v[i].y, i) for i in range(len(v))]
+      idx_of_min = min(indexed_v)[2]
+      v  = tuple(v[idx_of_min:])  + tuple(v[:idx_of_min])
+      mr = tuple(mr[idx_of_min:]) + tuple(mr[:idx_of_min])
 
-    return hash((tuple(v), tuple(mr)))
+      self.__hash = hash(v) ^ hash(mr)
+
+    return self.__hash
 
 class TransformableTile(TileWithMatchingRule):
   def __init__(self, t = pg.identity_transform):
