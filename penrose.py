@@ -87,6 +87,8 @@ class TransformableTile(TileWithMatchingRule):
       raise TypeError
     if not (t.is_orientation_preserving() and t.is_conformal()):
       raise ValueError
+
+    super().__init__()
     self._v = tuple(pt.transform(t) for pt in self._proto_vertices)
     if self._convex_decomposition is None:
       self._convex = (Polygon(self._v),)
