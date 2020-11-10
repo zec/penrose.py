@@ -193,13 +193,14 @@ class Number:
     return (-self) + other
 
   def _do_multiplication(self, other):
-    if isinstance(other, int) or isinstance(other, Q):
+    ty = type(other)
+    if ty is int or ty is Q:
       v = self._vec
       return Number(other * v[0], other * v[1], other * v[2], other * v[3])
     # So, now that we've handled the simple case of multiplying
     # a Number by a rational number, we handle the trickier case
     # of two Numbers:
-    elif not isinstance(other, Number):
+    elif ty is not Number:
       return NotImplemented
 
     s0, s1, s2, s3 = self._vec
