@@ -115,24 +115,37 @@ class RatInterval:
 # but for that, we need a possibly-narrow interval for alpha=sqrt(2*(5+sqrt(5))).
 #
 # Some facts: as mentioned, alpha is a zero of the polynomial
-# f(x) = x^4 - 20*x^2 + 80. Alpha is in the interval [7/2, 4], on which f is
+# f(x) = x^4 - 20*x^2 + 80. Alpha is in the interval (7/2, 4), on which f is
 # monotonic increasing. Alpha is not a rational number. This allows
 # for a very simple binary search to work. We implement it as follows:
 
 def _generating_poly(x):
   return ((x * x - 20) * x * x) + 80
 
+_init_interval = RatInterval(Q(7,2), Q(4))
+_cached_intervals = {}
+_max_cached = 0
+
 def _intervals_for_alpha():
-  interval = RatInterval(Q(7,2), Q(4))
+  global _init_interval, _cached_intervals, _max_cached
+  interval = _init_interval
   yield interval
+  i = 1
 
   while True:
-    mdpt = interval.midpoint()
-    if _generating_poly(mdpt) > 0:
-      interval = RatInterval(interval.low, mdpt)
+    if i <= _max_cached:
+      interval = _cached_intervals[i]
     else:
-      interval = RatInterval(mdpt, interval.high)
+      mdpt = interval.midpoint()
+      if _generating_poly(mdpt) > 0:
+        interval = RatInterval(interval.low, mdpt)
+      else:
+        interval = RatInterval(mdpt, interval.high)
+      _cached_intervals[i] = interval
+      _max_cached = i
+
     yield interval
+    i += 1
 
 _display_powers_of_alpha = [
   '{}', '{}*\u03b1', '{}*\u03b1\u00b2', '{}*\u03b1\u00b3'
@@ -193,6 +206,8 @@ class Number:
     return (-self) + other
 
   def _do_multiplication(self, other):
+    global type, int, Q, _powers_of_alpha
+
     ty = type(other)
     if ty is int or ty is Q:
       v = self._vec
