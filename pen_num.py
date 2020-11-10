@@ -124,25 +124,23 @@ def _generating_poly(x):
 
 _init_interval = RatInterval(Q(7,2), Q(4))
 _cached_intervals = {}
-_max_cached = 0
 
 def _intervals_for_alpha():
-  global _init_interval, _cached_intervals, _max_cached
+  global _init_interval, _cached_intervals
   interval = _init_interval
   yield interval
   i = 1
 
   while True:
-    if i <= _max_cached:
+    try:
       interval = _cached_intervals[i]
-    else:
+    except KeyError:
       mdpt = interval.midpoint()
       if _generating_poly(mdpt) > 0:
         interval = RatInterval(interval.low, mdpt)
       else:
         interval = RatInterval(mdpt, interval.high)
       _cached_intervals[i] = interval
-      _max_cached = i
 
     yield interval
     i += 1
