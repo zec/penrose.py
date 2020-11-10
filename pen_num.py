@@ -56,45 +56,69 @@ class RatInterval:
   def __eq__(self, other):
     return (self.low == other.low) and (self.high == other.high)
 
-  def _do_addition(self, other):
-    try:
-      o = RatInterval(other)
-    except:
-      return NotImplemented
-    return RatInterval(self.low + o.low, self.high + o.high)
-
   def __add__(self, other):
-    return self._do_addition(other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      return RatInterval(self.low + other, self.high + other)
+    elif ty is RatInterval:
+      return RatInterval(self.low + other.low, self.high + other.high)
+    else:
+      return NotImplemented
 
   def __radd__(self, other):
-    return self._do_addition(other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      return RatInterval(self.low + other, self.high + other)
+    elif ty is RatInterval:
+      return RatInterval(self.low + other.low, self.high + other.high)
+    else:
+      return NotImplemented
 
   def __neg__(self):
     return RatInterval(-self.high, -self.low)
 
   def __sub__(self, other):
-    return self._do_addition(-other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      return RatInterval(self.low - other, self.high - other)
+    elif ty is RatInterval:
+      return RatInterval(self.low - other.high, self.high - other.low)
+    else:
+      return NotImplemented
 
   def __rsub__(self, other):
-    return (-self)._do_addition(other)
-
-  def _do_multiplication(self, other):
-    try:
-      o = RatInterval(other)
-    except:
+    ty = type(other)
+    if ty is int or ty is Q:
+      return RatInterval(other - self.high, other - self.low)
+    else:
       return NotImplemented
-    a = self.low  * o.low
-    b = self.low  * o.high
-    c = self.high * o.low
-    d = self.high * o.high
-    x = [a, b, c, d]
-    return RatInterval(min(x), max(x))
 
   def __mul__(self, other):
-    return self._do_multiplication(other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      if other >= 0:
+        return RatInterval(other * self.low, other * self.high)
+      else:
+        return RatInterval(other * self.high, other * self.low)
+    elif ty is RatInterval:
+      a = self.low  * other.low
+      b = self.low  * other.high
+      c = self.high * other.low
+      d = self.high * other.high
+      x = (a, b, c, d)
+      return RatInterval(min(x), max(x))
+    else:
+      return NotImplemented
 
   def __rmul__(self, other):
-    return self._do_multiplication(other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      if other >= 0:
+        return RatInterval(other * self.low, other * self.high)
+      else:
+        return RatInterval(other * self.high, other * self.low)
+    else:
+      return NotImplemented
 
   def __repr__(self):
     ty = type(self)
@@ -127,6 +151,7 @@ _cached_intervals = { 0: RatInterval(Q(7,2), Q(4)) }
 def _intervals_for_alpha():
   global _cached_intervals
   i = 0
+  interval = None
 
   while True:
     try:
@@ -179,28 +204,45 @@ class Number:
   def __neg__(self):
     return Number(*(-q for q in self._vec))
 
-  def _do_addition(self, other):
-    try:
-      o = Number(other)
-    except:
-      return NotImplemented
-    v1 = self._vec
-    v2 = o._vec
-    return Number(*( self._vec[i] + o._vec[i] for i in range(len(self._vec)) ))
-
   def __add__(self, other):
-    return self._do_addition(other)
+    ty = type(other)
+    if ty is Number:
+      s, o = self._vec, other._vec
+      return Number(s[0] + o[0], s[1] + o[1], s[2] + o[2], s[3] + o[3])
+    elif ty is int or ty is Q:
+      v = self._vec
+      return Number(other + v[0], *v[1:])
+    else:
+      return NotImplemented
 
   def __radd__(self, other):
-    return self._do_addition(other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      v = self._vec
+      return Number(other + v[0], *v[1:])
+    else:
+      return NotImplemented
 
   def __sub__(self, other):
-    return self + (-other)
+    ty = type(other)
+    if ty is Number:
+      s, o = self._vec, other._vec
+      return Number(s[0] - o[0], s[1] - o[1], s[2] - o[2], s[3] - o[3])
+    elif ty is int or ty is Q:
+      v = self._vec
+      return Number(v[0] - other, *v[1:])
+    else:
+      return NotImplemented
 
   def __rsub__(self, other):
-    return (-self) + other
+    ty = type(other)
+    if ty is int or ty is Q:
+      v = self._vec
+      return Number(other - v[0], -v[1], -v[2], -v[3])
+    else:
+      return NotImplemented
 
-  def _do_multiplication(self, other):
+  def __mul__(self, other):
     global type, int, Q, _powers_of_alpha
 
     ty = type(other)
@@ -248,11 +290,13 @@ class Number:
 
     return Number(prod0, prod1, prod2, prod3)
 
-  def __mul__(self, other):
-    return self._do_multiplication(other)
-
   def __rmul__(self, other):
-    return self._do_multiplication(other)
+    ty = type(other)
+    if ty is int or ty is Q:
+      v = self._vec
+      return Number(other * v[0], other * v[1], other * v[2], other * v[3])
+    else:
+      return NotImplemented
 
   # There is a multiplicative inverse, but we don't need it,
   # which is just as well - it's a little gnarly, and while
