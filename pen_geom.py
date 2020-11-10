@@ -317,6 +317,7 @@ class LineSegment:
     if begin == end:
       raise ValueError
     self.begin, self.end, self.direction = begin, end, end - begin
+    self._min_max = (begin, end) if (begin.x, begin.y) < (end.x, end.y) else (end, begin)
 
   def __eq__(self, other):
     if not isinstance(other, LineSegment):
@@ -353,6 +354,40 @@ class LineSegment:
 
   def bbox(self):
     return Rectangle(self.begin, self.end)
+
+  def is_along_same_line(self, other):
+    return (self.direction ^ other.direction).sgn() == 0 \
+           and ((self.begin - other.begin) ^ other.direction).sgn() == 0
+
+  def contains_point(self, other):
+    ls_dir = self.direction
+    s_min, s_max = self._min_max
+
+    if ls_dir.y.sgn() == 0:
+      return other.y == s_min.y and s_min.x <= other.x and other.x <= s_max.x
+    elif ls_dir.x.sgn() == 0:
+      return other.x == s_min.x and s_min.y <= other.y and other.y <= s_max.y
+    else:
+      return ((other - s_min) ^ ls_dir) == 0 \
+             and s_min.x <= other.x and other.x <= s_max.x
+
+  def significantly_overlaps_with(self, other):
+    '''Returns whether there's overlap between self and other that's more
+    than just a single point.'''
+
+    # Weed out the cases where the two segments aren't along the same line:
+    if (self.direction ^ other.direction).sgn() != 0 \
+       or ((self.begin - other.begin) ^ other.direction).sgn() != 0:
+      return False
+
+    # OK, so they're collinear. Let's see if there's overlap of non-zero length:
+    s_min, s_max = self._min_max
+    o_min, o_max = other._min_max
+
+    if self.direction.x.sgn() == 0:
+      return s_min.y < o_max.y and o_min.y < s_max.y
+    else:
+      return s_min.x < o_max.x and o_min.x < s_max.x
 
 class Rectangle:
   '''A rectangle with sides parallel to the x- and y-axes'''
@@ -622,21 +657,9 @@ def do_convex_polygons_intersect(A, B):
   # want to know which edges, so we can report the result.
   for i, ea in zip(itertools.count(), A.edges()):
     for j, eb in zip(itertools.count(), B.edges()):
-      # Find the orientations of all endpoints w.r.t. the other edge:
-      dir_a, dir_b = ea.direction, eb.direction
-      orient = [
-        (dir_a ^ (eb.begin - ea.begin)).sgn(),
-        (dir_a ^ (eb.end   - ea.begin)).sgn(),
-        (dir_b ^ (ea.begin - eb.begin)).sgn(),
-        (dir_b ^ (ea.end   - eb.begin)).sgn()
-      ]
-      if all(s == 0 for s in orient): # If all four points are collinear
-        coord_a, coord_b = sorted([ea.begin.x, ea.end.x]), sorted([eb.begin.x, eb.end.x])
-        if (ea.begin.x == ea.end.x): # handle special case of vertical lines
-          coord_a, coord_b = sorted([ea.begin.y, ea.end.y]), sorted([eb.begin.y, eb.end.y])
-        if (coord_a[0] < coord_b[1]) and (coord_b[0] < coord_a[1]):
-          # We have overlap of lines that's more than just a single point!
-          return (True, False, (i, j))
+      if ea.significantly_overlaps_with(eb):
+        # We have overlap of edges that's more than just a single point!
+        return (True, False, (i, j))
 
   # If we get here, no two edges meet at more than just a point:
   return (True, False, None)
