@@ -284,10 +284,11 @@ class AffineTransform:
 # The identity transformation
 identity_transform = AffineTransform(1, 0, 0, 0, 1, 0)
 
+_rotations = [AffineTransform(c, -s, 0,    s, c, 0) for c, s in _trig_multiples_of_18]
+
 def rotation(n):
   '''Returns the AffineTransform for rotation by n*18 degrees, n integer'''
-  c, s = _trig_multiples_of_18[n % 20]
-  return AffineTransform(c, -s, 0,    s, c, 0)
+  return _rotations[n % 20]
 
 def scaling(sx, sy=None):
   '''Returns the AffineTranform for scaling by sx
