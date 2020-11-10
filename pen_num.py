@@ -14,12 +14,26 @@ def _fraction_as_string(q):
 # later) to get a list of powers of alpha=sqrt(2*(5+sqrt(5))) in terms of
 # (1, alpha, alpha^2, alpha^3):
 
-_powers_of_alpha = []
+def _init_powers_of_alpha():
+  alpha4 = (-80, 0, 20, 0) # alpha^4, expressed in terms of lesser powers of alpha
+  current_power = (1, 0, 0, 0) # start with alpha^0
+  pa = []
+
+  for n in range(7):
+    pa.append(current_power)
+    # Now, muliply by alpha:
+    shift_by_alpha = (0, current_power[0], current_power[1], current_power[2])
+    current_power = tuple(shift_by_alpha[i] + current_power[3] * alpha4[i] for i in range(4))
+  return tuple(pa)
+
+_powers_of_alpha = _init_powers_of_alpha()
 
 # We use some interval arithmetic for correct comparison operations.
 class RatInterval:
   def __init__(self, low, high=None):
-    if isinstance(low, RatInterval):
+    if type(low) == Q and type(high) == Q:
+      self.low, self.high = low, high
+    elif isinstance(low, RatInterval) and high is None:
       self.low, self.high = low.low, low.high
     elif high is None:
       self.low = Q(low)
@@ -180,29 +194,48 @@ class Number:
 
   def _do_multiplication(self, other):
     if isinstance(other, int) or isinstance(other, Q):
-      return Number(*(other * q for q in self._vec))
+      v = self._vec
+      return Number(other * v[0], other * v[1], other * v[2], other * v[3])
     # So, now that we've handled the simple case of multiplying
-    # a Number by a rational number, we can use
-    # that to handle the trickier case of two Numbers:
-    elif isinstance(other, Number):
-      s = self._vec
-      o = other._vec
-      coeffs = [
-        s[0]*o[0],
-        s[1]*o[0] + s[0]*o[1],
-        s[2]*o[0] + s[1]*o[1] + s[0]*o[2],
-        s[3]*o[0] + s[2]*o[1] + s[1]*o[2] + s[0]*o[3],
-                    s[3]*o[1] + s[2]*o[2] + s[1]*o[3],
-                                s[3]*o[2] + s[2]*o[3],
-                                            s[3]*o[3]
-      ]
-
-      prod = Number(0)
-      for i in range(len(coeffs)):
-        prod += coeffs[i] * _powers_of_alpha[i]
-      return prod
-    else:
+    # a Number by a rational number, we handle the trickier case
+    # of two Numbers:
+    elif not isinstance(other, Number):
       return NotImplemented
+
+    s0, s1, s2, s3 = self._vec
+    o0, o1, o2, o3 = other._vec
+
+    # Actually, first we look for quick wins -- Numbers that
+    # represent rational numbers:
+    if s1 == 0 and s2 == 0 and s3 == 0:
+      return other if (s0 == 1) else other * s0
+    if o1 == 0 and o2 == 0 and o3 == 0:
+      return self  if (o0 == 1) else self * o0
+
+    coeffs = (
+      s0 * o0,
+      s1 * o0 + s0 * o1,
+      s2 * o0 + s1 * o1 + s0 * o2,
+      s3 * o0 + s2 * o1 + s1 * o2 + s0 * o3,
+                s3 * o1 + s2 * o2 + s1 * o3,
+                          s3 * o2 + s2 * o3,
+                                    s3 * o3
+    )
+
+    prod0 = 0
+    prod1 = 0
+    prod2 = 0
+    prod3 = 0
+
+    for coeff, poa in zip(coeffs, _powers_of_alpha):
+      if coeff != 0:
+        pa0, pa1, pa2, pa3 = poa
+        prod0 += coeff * pa0
+        prod1 += coeff * pa1
+        prod2 += coeff * pa2
+        prod3 += coeff * pa3
+
+    return Number(prod0, prod1, prod2, prod3)
 
   def __mul__(self, other):
     return self._do_multiplication(other)
@@ -328,15 +361,3 @@ phi = (sqrt5 + 1) * Q(1,2)
 
 # The inverse of the golden ratio, which conveniently is just phi-1
 inv_phi = phi - one
-
-def _init_powers_of_alpha():
-  _alpha4 = (-80, 0, 20, 0) # alpha^4, expressed in terms of lesser powers of alpha
-  _current_power = (1, 0, 0, 0) # start with alpha^0
-
-  for n in range(7):
-    _powers_of_alpha.append(Number(*_current_power))
-    # Now, muliply by alpha:
-    _shift_by_alpha = (0, _current_power[0], _current_power[1], _current_power[2])
-    _current_power = tuple(_shift_by_alpha[i] + _current_power[3] * _alpha4[i] for i in range(4))
-
-_init_powers_of_alpha()
