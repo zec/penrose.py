@@ -627,7 +627,7 @@ def do_convex_polygons_intersect(A, B):
         (dir_a ^ (eb.begin - ea.begin)).sgn(),
         (dir_a ^ (eb.end   - ea.begin)).sgn(),
         (dir_b ^ (ea.begin - eb.begin)).sgn(),
-        (dir_b ^ (ea.begin - eb.begin)).sgn()
+        (dir_b ^ (ea.end   - eb.begin)).sgn()
       ]
       if all(s == 0 for s in orient): # If all four points are collinear
         coord_a, coord_b = sorted([ea.begin.x, ea.end.x]), sorted([eb.begin.x, eb.end.x])
