@@ -640,3 +640,45 @@ def do_convex_polygons_intersect(A, B):
 
   # If we get here, no two edges meet at more than just a point:
   return (True, False, None)
+
+_origin_point = Point(0, 0)
+
+# Very simple implementation of turtle geometry
+class MiniTurtle:
+  def __init__(self):
+    global _origin_point
+    self._points = []
+    self._curr_pt = _origin_point
+    self._angle = 0
+
+  def move_to(self, x, y = None):
+    ty = type(x)
+    if ty is Point:
+      self._points.append(x)
+      self._curr_pt = x
+    else:
+      pt = Point(x, y)
+      self._points.append(pt)
+      self._curr_pt = pt
+
+  def set_absolute_angle(self, theta):
+    self._angle = int(theta)
+
+  def forward(self, length):
+    pts = self._points
+    curr = self._curr_pt
+    if len(pts) == 0:
+      pts.append(curr)
+
+    new_pt = curr + Vector(length, 0).rotate(self._angle)
+    pts.append(new_pt)
+    self._curr_pt = new_pt
+
+  def left(self, theta):
+    self._angle += int(theta)
+
+  def right(self, theta):
+    self._angle -= int(theta)
+
+  def get_points(self):
+    return tuple(self._points)
