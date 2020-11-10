@@ -326,10 +326,17 @@ class Number:
     for alpha in _intervals_for_alpha():
       yield ((v[3] * alpha + v[2]) * alpha + v[1]) * alpha + v[0] # Horner's rule
 
+  _sgn_cache = {}
+
   # OK, now we implement comparison functions. First off, is a
   # number less than, equal to, or greater than zero?
   def sgn(self):
+    cached = self._sgn_cache.get(self, None)
+    if cached is not None:
+      return cached
+
     if all(q == 0 for q in self._vec): # exactly zero
+      self._sgn_cache[self] = 0
       return 0
     # We use successively better intervals around alpha
     # to see whether our (now known to be non-zero) Number
@@ -337,8 +344,10 @@ class Number:
     v = self._vec
     for approx in self.interval_sequence():
       if approx.low > 0: # *definitely* positive
+        self._sgn_cache[self] = 1
         return 1
       if approx.high < 0: # *definitely* negative
+        self._sgn_cache[self] = -1
         return -1
       # If we get here, we don't know whether self is positive
       # or negative yet. We start another iteration,
@@ -351,12 +360,26 @@ class Number:
     return (self - other).sgn() <= 0
 
   def __eq__(self, other):
-    v, ov = self._vec, Number(other)._vec
-    return all(v[i] == ov[i] for i in range(4))
+    ty = type(other)
+    if ty is Number:
+      v, ov = self._vec, other._vec
+      return v[0] == ov[0] and v[1] == ov[1] and v[2] == ov[2] and v[3] == ov[3]
+    elif ty is int or ty is Q:
+      v = self._vec
+      return other == v[0] and v[1] == 0 and v[2] == 0 and v[3] == 0
+    else:
+      return NotImplemented
 
   def __ne__(self, other):
-    v, ov = self._vec, Number(other)._vec
-    return not all(v[i] == ov[i] for i in range(4))
+    ty = type(other)
+    if ty is Number:
+      v, ov = self._vec, other._vec
+      return v[0] != ov[0] or v[1] != ov[1] or v[2] != ov[2] or v[3] != ov[3]
+    elif ty is int or ty is Q:
+      v = self._vec
+      return other != v[0] or v[1] != 0 or v[2] != 0 or v[3] != 0
+    else:
+      return NotImplemented
 
   def __ge__(self, other):
     return (self - other).sgn() >= 0
