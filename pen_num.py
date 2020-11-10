@@ -122,14 +122,11 @@ class RatInterval:
 def _generating_poly(x):
   return ((x * x - 20) * x * x) + 80
 
-_init_interval = RatInterval(Q(7,2), Q(4))
-_cached_intervals = {}
+_cached_intervals = { 0: RatInterval(Q(7,2), Q(4)) }
 
 def _intervals_for_alpha():
-  global _init_interval, _cached_intervals
-  interval = _init_interval
-  yield interval
-  i = 1
+  global _cached_intervals
+  i = 0
 
   while True:
     try:
@@ -143,7 +140,7 @@ def _intervals_for_alpha():
       _cached_intervals[i] = interval
 
     yield interval
-    i += 1
+    i = max(max(_cached_intervals.keys()), i+1)
 
 _display_powers_of_alpha = [
   '{}', '{}*\u03b1', '{}*\u03b1\u00b2', '{}*\u03b1\u00b3'
