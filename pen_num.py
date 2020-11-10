@@ -105,8 +105,7 @@ class RatInterval:
       b = self.low  * other.high
       c = self.high * other.low
       d = self.high * other.high
-      x = (a, b, c, d)
-      return RatInterval(min(x), max(x))
+      return RatInterval(min(a,b,c,d), max(a,b,c,d))
     else:
       return NotImplemented
 
