@@ -379,7 +379,7 @@ class Number:
     # terms are zero:
     return all(q == 0 for q in self._vec[1:])
 
-  def _do_floor(self):
+  def __floor__(self):
     if self.is_rational():
       # when self is rational, we delegate:
       return floor(self._vec[0])
@@ -393,26 +393,25 @@ class Number:
         if floor_low == floor_high:
           return floor_low
 
-  def __floor__(self):
-    return self._do_floor()
-
   def __ceil__(self):
     if self.is_rational():
       return ceil(self._vec[0])
     else:
       # not rational, and in particular not an integer, so:
-      return self._do_floor() + 1
+      return self.__floor__() + 1
 
   # int(x) is usually truncate-to-zero, and we do likewise
   def __int__(self):
-    flr = self._do_floor()
-    v = self._vec
-
-    # if self is non-integer and negative:
-    if ((v[0].denominator != 1) or not self.is_rational()) and self < 0:
-      return flr + 1
+    if self.is_rational():
+      return int(self._vec[0])
     else:
-      return flr
+      flr = self.__floor__()
+
+      # if self is irrational (hence non-integer) *and* negative:
+      if self.sgn() < 0:
+        return flr + 1
+      else:
+        return flr
 
 # The generator of the number field
 alpha = Number(0, 1, 0, 0)
