@@ -31,15 +31,17 @@ _powers_of_alpha = _init_powers_of_alpha()
 # We use some interval arithmetic for correct comparison operations.
 class RatInterval:
   def __init__(self, low, high=None):
-    if type(low) == Q and type(high) == Q:
+    t_lo, t_hi = type(low), type(high)
+    if t_lo is Q and t_hi is Q:
       self.low, self.high = low, high
-    elif isinstance(low, RatInterval) and high is None:
+    elif t_lo is RatInterval and high is None:
       self.low, self.high = low.low, low.high
     elif high is None:
-      self.low = Q(low)
+      self.low = low if t_lo is Q else Q(low)
       self.high = self.low
     else:
-      self.low, self.high = Q(low), Q(high)
+      self.low  = low  if t_lo is Q else Q(low)
+      self.high = high if t_hi is Q else Q(high)
 
     if self.low > self.high:
       raise ValueError
@@ -180,9 +182,15 @@ _float_powers_of_alpha = (
   _float_alpha * _pre_alpha
 )
 
+_rational_zero = Q(0)
+
 class Number:
   '''An element of the number field Q[sqrt(2*(5+sqrt(5)))]'''
-  def __init__(self, e0 = 0, e1 = 0, e2 = 0, e3 = 0):
+
+  def __init__(self,
+    e0 = _rational_zero, e1 = _rational_zero,
+    e2 = _rational_zero, e3 = _rational_zero
+  ):
     if isinstance(e0, Number):
       self._vec = e0._vec
     else:
