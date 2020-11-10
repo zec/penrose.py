@@ -10,8 +10,8 @@ def _fraction_as_string(q):
   return '{}/{}'.format(q.numerator, q.denominator)
 
 # The minimal polynomial sqrt(2*(5+sqrt(5))) is a zero of
-# is x^4 - 20*x^2 + 80. As such, we can use _init_powers_of_alpha (defined
-# later) to get a list of powers of alpha=sqrt(2*(5+sqrt(5))) in terms of
+# is x^4 - 20*x^2 + 80. As such, we can use _init_powers_of_alpha
+# to get a list of powers of alpha=sqrt(2*(5+sqrt(5))) in terms of
 # (1, alpha, alpha^2, alpha^3):
 
 def _init_powers_of_alpha():

@@ -65,7 +65,7 @@ class Point:
     return (self.x == other.x) and (self.y == other.y)
 
   def __hash__(self):
-    return hash((0, self.x, self.y))
+    return hash(self.x) ^ ~hash(self.y)
 
   def transform(self, t):
     '''Returns self transformed by affine tranformation t'''
@@ -127,7 +127,7 @@ class Vector:
     return (self.x == other.x) and (self.y == other.y)
 
   def __hash__(self):
-    return hash((1, self.x, self.y))
+    return hash(self.x) ^ hash(self.y)
 
   def __neg__(self):
     return Vector(-self.x, -self.y)
@@ -569,8 +569,8 @@ def do_convex_polygons_intersect(A, B):
   # Separating Axis Theorem (SAT) to determine whether two polygons overlap.
 
   # get the list of vectors that are normal to each edge in the two polygons
-  edge_normals     = [e.direction.transform(_rot90) for e in A.edges()]
-  edge_normals.extend(e.direction.transform(_rot90) for e in B.edges())
+  edge_normals     = {e.direction.transform(_rot90) for e in A.edges()}
+  edge_normals.update(e.direction.transform(_rot90) for e in B.edges())
 
   # The SAT tells us that the two polygons (treated as including the boundary)
   # don't overlap if and only if their projections along one or more of
