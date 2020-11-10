@@ -2,6 +2,7 @@ from unittest import TestCase, skip
 import pen_geom as g
 from fractions import Fraction as Q
 from pen_num import Number as Y, phi, inv_phi, sqrt5, alpha
+from itertools import zip_longest
 
 class PenGeomSanityCheck(TestCase):
   '''Quick way to make sure tests in this module are being run'''
@@ -628,170 +629,348 @@ class TestTransformFunctions(TestCase):
         trans = g.scaling(*args)
         self.assertEqual(x.transform(trans), r)
 
-  @skip('not fully implemented yet')
   def test_translation(self):
+    P, V, AT = g.Point, g.Vector, g.AffineTransform
     cases = [
+      (0,  (3,5),      P(1, 2),          P(4, 7)),
+      (1,  (3,5),      V(1, 2),          V(1, 2)),
+      (2,  (V(3,5),),  P(1, 2),          P(4, 7)),
+      (3,  (-8,2),     AT(1,2,3, 4,5,6), AT(1,2,-5, 4,5,8)),
+      (4,  (V(-8,2),), AT(1,2,3, 4,5,6), AT(1,2,-5, 4,5,8)),
+
+      (5,  (4,-10),    P(5, -7),         P(9, -17)),
+      (6,  (4,-10),    V(5, -7),         V(5, -7)),
     ]
-    for args, x, r in cases:
-      with self.subTest(x = x, args = args):
+    for i, args, x, r in cases:
+      with self.subTest(i = i, x = str(x), args = args):
         trans = g.translation(*args)
         self.assertEqual(x.transform(trans), r)
 
 class TestLineSegment(TestCase):
-  @skip('not fully implemented yet')
   def test_constructor_succeed(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (0,  (P(0,0),  P(1,0)),             P(0,0),       P(1,0),        V(1,0)),
+      (1,  (P(1,0),  P(0,0)),             P(1,0),       P(0,0),        V(-1,0)),
+      (2,  (P(-3,5), V(3,Q(2,3))),        P(-3,5),      P(0,Q(17,3)),  V(3,Q(2,3))),
+      (3,  (P(inv_phi,2), P(phi,-sqrt5)), P(inv_phi,2), P(phi,-sqrt5), V(1,-(2+sqrt5))),
+      (4,  (P(14,2), V(-14,-2)),          P(14,2),      P(0,0),        V(-14,-2)),
     ]
-    for args, begin, end, d in cases:
-      with self.subTest(args = args):
+    for i, args, begin, end, d in cases:
+      with self.subTest(i = i, args = args):
         seg = g.LineSegment(*args)
         self.assertEqual(type(seg), g.LineSegment)
         self.assertEqual(seg.begin, begin)
         self.assertEqual(seg.end, end)
         self.assertEqual(seg.direction, d)
 
-  @skip('not fully implemented yet')
   def test_constructor_fail(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (0,  (P(1,2),),        TypeError),
+      (1,  (V(3,2), P(0,1)), TypeError),
+      (2,  (P(3,3), P(3,3)), ValueError),
+      (3,  (V(5,phi),),      TypeError),
+      (4,  (),               TypeError),
+
+      (5,  (P(14,6),V(0,0)), ValueError),
+      (6,  (P(0,0),),        TypeError),
     ]
-    for args, ex in cases:
-      with self.subTest(args = args):
+    for i, args, ex in cases:
+      with self.subTest(i = i, args = args):
         self.assertRaises(ex, g.LineSegment, *args)
 
-  @skip('not fully implemented yet')
   def test_equality(self):
+    LS = lambda d, e: g.LineSegment(g.Point(*d), g.Point(*e))
     cases = [
+      (0,  LS((0,0), (1,0)),       LS((0,0), (1,0)),    True),
+      (1,  LS((0,0), (1,0)),       LS((1,0), (0,0)),    False), # order matters!
+      (2,  LS((3,sqrt5), (5,2)),   LS((-3,-sqrt5), (-5,-2)), False),
+      (3,  LS((5,3), (2,1)),       g.LineSegment(g.Point(5,3), g.Vector(-3,-2)), True),
+      (4,  LS((3,inv_phi), (1,1)), LS((3,phi-1), (1,1)), True),
+
+      (5,  LS((1,2), (3,4)),       LS((1,2), (3,4)),    True),
+      (6,  LS((1,2), (3,4)),       LS((1,2), (3,5)),    False),
+      (7,  LS((1,2), (3,4)),       LS((1,2), (4,4)),    False),
+      (8,  LS((1,2), (3,4)),       LS((1,3), (3,4)),    False),
+      (9,  LS((1,2), (3,4)),       LS((0,2), (3,4)),    False),
+
+      (10, LS((1,2), (88,4)),      LS((2,3), (89,5)),   False), # same direction, but still different
     ]
-    for a, b, result in cases:
-      with self.subTest(a = a, b = b):
+    for i, a, b, result in cases:
+      with self.subTest(i = i, a = str(a), b = str(b)):
         self.assertEqual(a == b, result)
         self.assertEqual(b == a, result)
         self.assertEqual(a != b, not result)
         self.assertEqual(b != a, not result)
 
-  @skip('not fully implemented yet')
   def test_addition(self):
+    LS = lambda d, e: g.LineSegment(g.Point(*d), g.Point(*e))
+    V = g.Vector
     cases = [
+      (0,  LS((5,7), (3,2)),      V(0,0),      LS((5,7), (3,2))),
+      (1,  LS((5,7), (3,2)),      V(-5,-7),    LS((0,0), (-2,-5))),
+      (2,  LS((-phi,0),(0,phi)),  V(phi, phi), LS((0,phi), (phi,2*phi))),
+      (3,  LS((0,0), (1,0)),      V(0,-1),     LS((0,-1), (1,-1))),
     ]
-    for seg, v, r in cases:
-      with self.subTest(seg = seg, v = v):
+    for i, seg, v, r in cases:
+      with self.subTest(i = i, seg = str(seg), v = str(v)):
         self.assertEqual(seg + v, r)
         self.assertEqual(v + seg, r)
 
-  @skip('not fully implemented yet')
-  def test_transform(self):
+  def test_transform_succeed(self):
+    LS = lambda d, e: g.LineSegment(g.Point(*d), g.Point(*e))
+    AT, I, T, R, S = g.AffineTransform, g.identity_transform, g.translation, g.rotation, g.scaling
     cases = [
+      (0,  LS((0,0), (1,0)),        I,          LS((0,0), (1,0))),
+      (1,  LS((3,5), (18,-7)),      I,          LS((3,5), (18,-7))),
+      (2,  LS((2,3), (4,5)),        R(5),       LS((-3,2), (-5,4))),
+      (3,  LS((phi,0), (phi,-phi)), S(inv_phi), LS((1,0), (1,-1))),
     ]
-    for seg, trans, r in cases:
-      with self.subTest(seg = seg, trans = trans):
+    for i, seg, trans, r in cases:
+      with self.subTest(i = i, seg = str(seg), trans = str(trans)):
         self.assertEqual(seg.transform(trans), r)
         self.assertEqual(trans @ seg, r)
 
-  @skip('not fully implemented yet')
-  def test_bbox(self):
+  def test_transform_fail(self):
+    LS = lambda d, e: g.LineSegment(g.Point(*d), g.Point(*e))
+    AT, S = g.AffineTransform, g.scaling
     cases = [
+      (0,  LS((15,8), (-20,7)),   S(0),    ValueError),
+      (1,  LS((15,8), (-20,8)),   S(0,1),  ValueError),
+      (2,  LS((15,8), (15,7)),    S(-1,0), ValueError),
+      (3,  LS((12,8), (1,19)),    AT(1,1,4, -1,-1,7),  ValueError),
     ]
-    for seg, bbox in cases:
-      with self.subTest(seg = seg):
+    for i, seg, trans, ex in cases:
+      with self.subTest(i = i, seg = str(seg), trans = str(trans)):
+        self.assertRaises(ex, lambda s, t: s.transform(t), seg, trans)
+        self.assertRaises(ex, lambda s, t: t @ s, seg, trans)
+
+  def test_bbox(self):
+    LS = lambda d, e: g.LineSegment(g.Point(*d), g.Point(*e))
+    R = g.Rectangle
+    cases = [
+      (0,  LS((0,0), (1,0)),      R(0,0,1,0)),
+      (1,  LS((3,5), (2,17)),     R(2,5,3,17)),
+      (2,  LS((-2,-phi), (-2,1)), R(-2,-phi,-2,1)),
+      (3,  LS((15,9), (3,2)),     R(3,2,15,9)),
+    ]
+    for i, seg, bbox in cases:
+      with self.subTest(i = i, seg = str(seg)):
         self.assertEqual(seg.bbox(), bbox)
 
 class TestRectangle(TestCase):
-  @skip('not fully implemented yet')
   def test_constructor_succeed(self):
+    P, V = g.Point, g.Vector
     cases = [
+      (0,  (P(1,2), P(3,5)),     Y(1),   Y(2),   Y(3),   Y(5)),
+      (1,  (14, 2, -6, 8),       Y(-6),  Y(2),   Y(14),  Y(8)),
+      (2,  (P(13,8), V(-4,-5)),  9,      3,      13,     8),
+      (3,  (V(0,0), P(5,2)),     5,      2,      5,      2),
+      (4,  (4, 5, -6, -7),       -6,     -7,     4,      5),
+
+      (5,  (P(Q(1,2), Q(3,2)), V(1,1)),
+                                 Q(1,2), Q(3,2), Q(3,2), Q(5,2)),
     ]
-    for args, minx, miny, maxx, maxy in cases:
-      with self.subTest(args = args):
+    for i, args, minx, miny, maxx, maxy in cases:
+      with self.subTest(i = i, args = args):
         r = g.Rectangle(*args)
         self.assertEqual(type(r), g.Rectangle)
+        self.assertTrue(type(x) == Y for x in [r.min_x,r.min_y,r.max_x,r.max_y])
         self.assertEqual(r.min_x, minx)
         self.assertEqual(r.min_y, miny)
         self.assertEqual(r.max_x, maxx)
         self.assertEqual(r.max_y, maxy)
 
-  @skip('not fully implemented yet')
   def test_constructor_fail(self):
+    P, V, LS = g.Point, g.Vector, g.LineSegment
     cases = [
+      (0,  (),                    TypeError),
+      (1,  (P(3,5),),             TypeError),
+      (2,  (V(1,7),),             TypeError),
+      (3,  (V(5,5), V(1,2)),      TypeError),
+      (4,  (LS(P(0,0), P(1,2)),), TypeError),
+
+      (5,  (P(3,4), 45, 2),       TypeError),
+      (6,  (3, 4, P(45, 2)),      TypeError),
+      (7,  (1, 2, 3, 'hi!'),      TypeError),
     ]
-    for args, ex in cases:
-      with self.subTests(args = args):
+    for i, args, ex in cases:
+      with self.subTest(i = i, args = args):
         self.assertRaises(ex, g.Rectangle, ex)
 
-  @skip('not fully implemented yet')
   def test_equality(self):
+    R = g.Rectangle
     cases = [
+      (0,  R(0,0,0,0),    R(0,0,0,0),      True),
+      (1,  R(0,0,0,0),    R(0,0,0,1),      False),
+      (2,  R(-1,0,0,0),   R(0,0,0,0),      False),
+      (3,  R(5,phi,8,2),  R(8,phi,5,2),    True),
+      (4,  R(35,8,90,8),  R(90,8,35,8),    True),
+
+      (5,  R(Q(1,1000),2,-5,3),
+                          R(-5,2,0,3),     False),
+      (6,  R(1,2,3,4),    g.LineSegment(g.Point(1,2), g.Point(3,4)),
+                                           False),
+      (7,  R(1,2,1,2),    g.Point(1,2),    False),
     ]
-    for a, b, r in cases:
-      with self.subTests(a = a, b = b):
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = str(a), b = str(b)):
         self.assertEqual(a == b, r)
         self.assertEqual(b == a, r)
         self.assertEqual(a != b, not r)
         self.assertEqual(b != a, not r)
 
-  @skip('not fully implemented yet')
   def test_bbox(self):
+    R = g.Rectangle
     cases = [
+      (0,  R(1,2,4,3)),
+      (1,  R(8,2,1,1)),
+      (2,  R(0,0,0,0)),
+      (3,  R(0,0,1,0)),
+      (4,  R(0,0,0,1)),
+
+      (5,  R(-213,239,Q(2382839,4),-sqrt5)),
     ]
-    for rect, bbox in cases:
-      with self.subTests(rect = rect):
+    for i, rect in cases:
+      with self.subTest(i = i, rect = str(rect)):
         self.assertEqual(rect.bbox(), rect)
 
 class TestDoBboxesOverlap(TestCase):
-  @skip('not fully implemented yet')
   def test_do_bboxes_overlap(self):
+    R = g.Rectangle
     cases = [
+      (0,  R(1,2,3,4),     R(-1,-2,-3,-4),      False),
+      (1,  R(1,2,3,4),     R(1,2,3,4),          True),
+      (2,  R(1,2,3,4),     R(3,4,5,6),          True), # event single-point overlap counts
+      (3,  R(13,4,13,8),   R(13,8,13,10),       True),
+      (4,  R(13,4,13,8),   R(13,21,13,99),      False),
+
+      (5,  R(-13,4,-13,8), R(-13,5,-13,7),      True),
+      (6,  R(-13,4,-13,8), R(-13,6,-13,10),     True),
+      (7,  R(1,2,3,4),     R(3,3,8,5),          True),
+      (8,  R(1,2,1,2),     R(1,2,1,2),          True),
+      (9,  R(1,2,1,2),     R(0,0,4,4),          True),
+
+      (10, R(1,2,1,2),     R(-2,-2,-4,-4),      False),
     ]
-    for a, b, r in cases:
-      with self.subTests(a = a, b = b):
-        self.assertEqual(do_bboxes_overlap(a, b), r)
-        self.assertEqual(do_bboxes_overlap(b, a), r)
+    for i, a, b, r in cases:
+      with self.subTest(i = i, a = str(a), b = str(b)):
+        self.assertEqual(g.do_bboxes_overlap(a, b), r)
+        self.assertEqual(g.do_bboxes_overlap(b, a), r)
 
 class TestPolygon(TestCase):
-  _test_polygons = {
-  }
-
-  @skip('not fully implemented yet')
   def test_constructor_succeed(self):
+    P = g.Point
+    a2 = ((1,5), (2,6), (-1,7))
     cases = [
+      (0,  (P(0,0), P(1,0), P(0,1)),            3),
+      (1,  (P(0,0), P(1,0), P(1,1), P(0,1)),    4),
+      (2,  ([P(0,0), P(2,0), P(2,2)],),         3), # list
+      (3,  ((P(2,0), P(2,2), P(0,0)),),         3), # tuple
+      (4,  ((g.Point(*coords) for coords in a2),), 3), # generator
+
+      (5,  (P(3,0), P(1,1), P(0,3), P(-1,1), P(-3,0), P(-1,-1), P(0,-3), P(1,-1)), 8),
     ]
-    for args, n in cases:
-      with self.subTests(args = args):
+    for i, args, n in cases:
+      with self.subTest(i = i, args = args):
         poly = g.Polygon(*args)
         self.assertEqual(type(poly), g.Polygon)
         self.assertEqual(len(poly._v), n)
+        e = poly.edges()
         self.assertEqual(len(poly._e), n)
 
-  @skip('not fully implemented yet')
   def test_constructor_fail(self):
+    P = g.Point
     cases = [
+      (0,  (),                                  ValueError),
+      (1,  ([P(0,0), P(1,0), P(1,1)], P(0,1)),  TypeError),
+      (2,  ([P(0,0), P(1,0), P(1,1)], [P(-3,2), P(-4,2), P(-4,1)]), TypeError),
+      (3,  (P(3,2), P(4,1)),                    ValueError),
+      (4,  (P(4,4),),                           ValueError),
+
+      (5,  (P(3,2), P(4,4), P(5,2), 'hi!'),     TypeError),
+      (6,  ('hi!'),                             TypeError),
     ]
-    for args, ex in cases:
-      with self.subTests(args = args):
+    for i, args, ex in cases:
+      with self.subTest(i = i, args = args):
         self.assertRaises(ex, g.Polygon, *args)
 
-  @skip('not fully implemented yet')
+  _test_polygons = {
+  }
+
+  _test_polygon_data = {
+    'simple-triangle': ((0,0), (1,0), (0,1)),
+    'non-convex-quad': ((0,0), (3,0), (1,1), (0,3)),
+    'unit-pentagon':   ((p.x, p.y) for p in (g.Point(1,0).rotate(4*n) for n in range(5))),
+    'zig-zag':         ((0,0), (2,0), (2,2), (4,2), (4,4),
+                        (4,5), (3,5), (3,3), (1,3), (1,1)),
+  }
+
+  _up_pt1 = g.Point(1,0).rotate(4)
+  _up_pt2 = _up_pt1.rotate(4)
+  _up_pt3 = _up_pt2.rotate(4)
+  _up_pt4 = _up_pt3.rotate(4)
+
+  @classmethod
+  def setUpClass(cls):
+    for k, v in cls._test_polygon_data.items():
+      cls._test_polygons[k] = g.Polygon(g.Point(*coord) for coord in v)
+
   def test_vertices(self):
     cases = [
+      ('simple-triangle',  [(0,0), (1,0), (0,1)]),
+      ('non-convex-quad',  [(0,0), (3,0), (1,1), (0,3)]),
+      ('unit-pentagon',    [(1,0), (self._up_pt1.x,self._up_pt1.y),
+                                   (self._up_pt2.x,self._up_pt2.y),
+                                   (self._up_pt3.x,self._up_pt3.y),
+                                   (self._up_pt4.x,self._up_pt4.y)]),
+      ('zig-zag', [(0,0), (2,0), (2,2), (4,2), (4,4), (4,5), (3,5), (3,3), (1,3), (1,1)]),
     ]
-    for args, r in cases:
-      with self.subTest(args = args):
-        poly = g.Polygon(*args)
+    for i, r in cases:
+      with self.subTest(polyName = i):
+        poly = self._test_polygons[i]
         self.assertEqual(len(poly.vertices()), len(r))
-        self.assertTrue(all(v_poly == v_r for v_poly, v_r in zip(poly.vertices(), r)))
+        self.assertTrue(all(
+          (type(v_poly) == g.Point and v_poly == v_r)
+          for v_poly, v_r
+          in zip_longest(poly.vertices(), (g.Point(*c) for c in r))
+        ))
 
-  @skip('not fully implemented yet')
   def test_edges(self):
+    LS = lambda d, e: g.LineSegment(g.Point(*d), g.Point(*e))
+    LS2 = g.LineSegment
     cases = [
+      ('simple-triangle', [LS((0,0), (1,0)), LS((1,0), (0,1)), LS((0,1), (0,0))]),
+      ('non-convex-quad', [LS((0,0), (3,0)), LS((3,0), (1,1)),
+                           LS((1,1), (0,3)), LS((0,3), (0,0))]),
+      ('unit-pentagon',   [LS2(g.Point(1,0), self._up_pt1),
+                           LS2(self._up_pt1, self._up_pt2),
+                           LS2(self._up_pt2, self._up_pt3),
+                           LS2(self._up_pt3, self._up_pt4),
+                           LS2(self._up_pt4, g.Point(1,0))]),
+      ('zig-zag',         [LS((0,0), (2,0)), LS((2,0), (2,2)),
+                           LS((2,2), (4,2)), LS((4,2), (4,4)),
+                           LS((4,4), (4,5)), LS((4,5), (3,5)),
+                           LS((3,5), (3,3)), LS((3,3), (1,3)),
+                           LS((1,3), (1,1)), LS((1,1), (0,0))]),
     ]
-    for args, r in cases:
-      with self.subTest(args = args):
-        poly = g.Polygon(*args)
+    for i, r in cases:
+      with self.subTest(polyName = i):
+        poly = self._test_polygons[i]
         self.assertEqual(len(poly.edges()), len(r))
-        self.assertTrue(all(e_poly == e_r for e_poly, e_r in zip(poly.edges(), r)))
+        self.assertTrue(all(
+          (type(e_poly) == g.LineSegment and e_poly == e_r)
+          for e_poly, e_r
+          in zip_longest(poly.edges(), r)
+        ))
 
-  @skip('not fully implemented yet')
   def test_is_convex(self):
     cases = [
+      ('simple-triangle', True),
+      ('non-convex-quad', False),
+      ('unit-pentagon',   True),
+      ('zig-zag',         False),
     ]
     for i, r in cases:
       with self.subTest(polyName = i):
@@ -799,12 +978,16 @@ class TestPolygon(TestCase):
         self.assertEqual(poly.is_convex(), r)
         self.assertEqual(poly.is_convex(), r)
 
-  @skip('not fully implemented yet')
   def test_bbox(self):
+    R = g.Rectangle
     cases = [
+      ('simple-triangle', R(0, 0, 1, 1)),
+      ('non-convex-quad', R(0, 0, 3, 3)),
+      ('unit-pentagon',   R(self._up_pt2.x, self._up_pt4.y, 1, self._up_pt1.y)),
+      ('zig-zag',         R(0, 0, 4, 5)),
     ]
     for i, bbox in cases:
-      with self.subTest(polyName = i):
+      with self.subTest(polyName = i, pb = str(self._test_polygons[i].bbox())):
         poly = self._test_polygons[i]
         self.assertEqual(poly.bbox(), bbox)
         self.assertEqual(poly.bbox(), bbox)
@@ -814,9 +997,88 @@ class TestPolygonAlgorithms(TestCase):
     'unit-pentagon': g.Polygon(g.rotation(4*n) @ g.Point(1, 0) for n in range(5)),
   }
 
-  @skip('not fully implemented yet')
+  _test_polygon_data = {
+    'simple-triangle': [(0,0), (1,0), (0,1)],
+    'diamond':         [(1,0), (0,1), (-1,0), (0,-1)],
+    'tri2':            [(0,0), (1,0), (1,1)],
+    'tri3':            [(1,0), (1,1), (0,1)],
+    'tri4':            [(1,1), (0,1), (0,0)],
+    'non-convex-quad': [(0,0), (3,0), (1,1), (0,3)],
+    'zig-zag':         [(0,0), (2,0), (2,2), (4,2), (4,4),
+                        (4,5), (3,5), (3,3), (1,3), (1,1)],
+
+    'intersect1':      [(1,Q(1,3)), (0,1), (-1,Q(1,3))],
+    'intersect2':      [(0,0), (1,Q(2,3)), (-1,Q(2,3))],
+    'i2-other-way':    [(-1,Q(2,3)), (1,Q(2,3)), (0,0)],
+
+    'vintersect1':     [(0,0), (Q(2,3),-1), (Q(2,3),1)],
+    'vintersect2':     [(Q(1,3),-1), (1,0), (Q(1,3),1)],
+    'vi2-other-way':   [(Q(1,3),1), (1,0), (Q(1,3),-1)],
+
+    'close-noint1':    [(0,0), (Q(5,6),0), (0,Q(5,6))],
+    'close-noint2':    [(1,Q(1,6)), (1,1), (Q(1,6),1)],
+
+    # the next three are polygons with vertex-to-vertex or vertex-to-edge
+    # intersections with unit-pentagon
+    'pt-inter-pent1':  [(2,-1), (1,0), (2,1)],
+    'pt-inter-pent2':  [(1,-1), (2,0), (1,1)],
+    'pt-inter-pent3':  [(Y(1,0,Q(-1,8)),0), (-1,-1), (-1,1)],
+
+    'edge_int1':       [(0,0), (2,0), (0,1)],
+    'edge_int2':       [(2,1), (0,1), (2,0)],
+    'edge_int2-other': [(2,0), (0,1), (2,1)],
+    'edge_int1-rot1':  [(2,0), (0,1), (0,0)],
+    'edge_int1-rot2':  [(0,1), (0,0), (2,0)],
+
+    'h_edge_int1':     [(1,Q(1,3)), (0,1), (-1,Q(1,3))],
+    'h_edge_int2':     [(1,Q(1,3)), (-1,Q(1,3)), (0,-1)],
+
+    'v_edge_int1':     [(1,-1), (0,0), (1,1)],
+    'v_edge_int2':     [(1,1), (1,-1), (2,0)],
+
+    'intersect-pent4': [(0,0), (57,56), (56,57)],
+    'intersect-pent5': [(Q(1,2),0), (0,Q(1,2)), (Q(-1,2),0), (0,Q(-1,2))],
+  }
+
+  @classmethod
+  def setUpClass(cls):
+    for k, v in cls._test_polygon_data.items():
+      cls._test_polygons[k] = g.Polygon(g.Point(*coord) for coord in v)
+    pent = cls._test_polygons['unit-pentagon']
+    pent2 = (g.translation(2 * pent.vertices()[2].x, 0) @ g.rotation(10)) @ pent
+    v1 = pent.vertices()[1]
+    pent3 = (g.translation(v1.x, v1.y) @ g.rotation(10) @ g.translation(-1,0)) @ pent
+    cls._test_polygons['up-2'] = pent2
+    cls._test_polygons['up-3'] = pent3
+
   def test_point_in_polygon(self):
     cases = [
+      ('simple-triangle', (0, 0),              0),
+      ('simple-triangle', (inv_phi,1-inv_phi), 0),
+      ('simple-triangle', (Q(3,4), Q(1,2)),   -1),
+      ('simple-triangle', (Q(1,2), Q(3,4)),   -1),
+      ('simple-triangle', (Q(3,4), Q(1,4)),    0),
+      ('simple-triangle', (Q(1,4), Q(1,4)),   +1),
+
+      ('diamond',         (Q(1,4), Q(3,4)),    0),
+      ('diamond',         (3, 5),             -1),
+
+      ('diamond',         (0, 8),             -1),
+      ('diamond',         (8, 0),             -1),
+      ('diamond',         (0, -8),            -1),
+      ('diamond',         (-8, 0),            -1),
+
+      ('diamond',         (0, 1),              0),
+      ('diamond',         (1, 0),              0),
+      ('diamond',         (0, -1),             0),
+      ('diamond',         (-1, 0),             0),
+
+      ('diamond',         (Q(1,8), 0),        +1),
+      ('diamond',         (0, Q(1,8)),        +1),
+      ('diamond',         (Q(-1,8), 0),       +1),
+      ('diamond',         (0, Q(-1,8)),       +1),
+
+      ('diamond',         (0, 0),             +1),
     ]
     for i, coords, r in cases:
       with self.subTest(polyName = i, x = coords[0], y = coords[1]):
@@ -824,20 +1086,149 @@ class TestPolygonAlgorithms(TestCase):
         pt = g.Point(*coords)
         self.assertEqual(g.point_in_polygon(pt, poly), r)
 
-  @skip('not fully implemented yet')
+  def test_point_in_polygon_pictorial(self):
+    P = lambda x: g.Polygon(g.Point(*coord) for coord in x)
+    sgn_str = lambda x: '-' if x < 0 else ('+' if x > 0 else '0')
+
+    numbers = (-inv_phi, Q(-1,2), inv_phi-1, Q(-1,4), 0, Q(1,4), 1-inv_phi, Q(1,2), inv_phi, Q(3,4), 1, Q(5,4), phi)
+    numbers = [Y(x) for x in numbers]
+    numbers_rev = numbers.copy()
+    numbers_rev.reverse()
+
+    pics = {
+      'simple-triangle': ('-------------',
+                          '-------------',
+                          '----0--------',
+                          '----00-------',
+                          '----0+0------',
+                          '----0++0-----',
+                          '----0+++0----',
+                          '----0++++0---',
+                          '----0000000--',
+                          '-------------',
+                          '-------------',
+                          '-------------',
+                          '-------------'),
+      'diamond':         ('-------------',
+                          '-------------',
+                          '----0--------',
+                          '---0+0-------',
+                          '--0+++0------',
+                          '-0+++++0-----',
+                          '0+++++++0----',
+                          '+++++++++0---',
+                          '++++++++++0--',
+                          '+++++++++0---',
+                          '0+++++++0----',
+                          '-0+++++0-----',
+                          '--0+++0------'),
+      'tri2':            ('-------------',
+                          '-------------',
+                          '----------0--',
+                          '---------00--',
+                          '--------0+0--',
+                          '-------0++0--',
+                          '------0+++0--',
+                          '-----0++++0--',
+                          '----0000000--',
+                          '-------------',
+                          '-------------',
+                          '-------------',
+                          '-------------'),
+      'tri3':            ('-------------',
+                          '-------------',
+                          '----0000000--',
+                          '-----0++++0--',
+                          '------0+++0--',
+                          '-------0++0--',
+                          '--------0+0--',
+                          '---------00--',
+                          '----------0--',
+                          '-------------',
+                          '-------------',
+                          '-------------',
+                          '-------------'),
+      'tri4':            ('-------------',
+                          '-------------',
+                          '----0000000--',
+                          '----0++++0---',
+                          '----0+++0----',
+                          '----0++0-----',
+                          '----0+0------',
+                          '----00-------',
+                          '----0--------',
+                          '-------------',
+                          '-------------',
+                          '-------------',
+                          '-------------'),
+      'non-convex-quad': ('----0++++----',
+                          '----0+++++---',
+                          '----0+++++0--',
+                          '----0+++++++-',
+                          '----0++++++++',
+                          '----0++++++++',
+                          '----0++++++++',
+                          '----0++++++++',
+                          '----000000000',
+                          '-------------',
+                          '-------------',
+                          '-------------',
+                          '-------------'),
+    }
+    for i in pics:
+      with self.subTest(polyName = i):
+        poly = self._test_polygons[i]
+        pic_actual = []
+        for y in numbers_rev:
+          s = ''.join(sgn_str(g.point_in_polygon(g.Point(x, y), poly)) for x in numbers)
+          pic_actual.append(s)
+        pic_actual = tuple(pic_actual)
+        pic_expected = pics[i]
+        self.assertTrue(pic_actual == pic_expected,
+          msg = '\nexpected:\n{ex}\n\nactual:\n{ac}\n'.format(
+            ex = '\n'.join(pic_expected),
+            ac = '\n'.join(pic_actual)
+          )
+        )
+
   def test_do_convex_polygons_intersect(self):
     cases = [
+      ('intersect1',     'intersect2',      (True,  True,  None)),
+      ('intersect1',     'i2-other-way',    (True,  True,  None)),
+      ('intersect1',     'intersect1',      (True,  True,  None)),
+      ('intersect2',     'i2-other-way',    (True,  True,  None)),
+
+      ('close-noint1',   'close-noint2',    (False, False, None)),
+
+      ('unit-pentagon',  'pt-inter-pent1',  (True,  False, None)),
+      ('unit-pentagon',  'pt-inter-pent2',  (True,  False, None)),
+      ('unit-pentagon',  'pt-inter-pent3',  (True,  False, None)),
+
+      ('edge_int1',      'edge_int2',       (True,  False, (1, 1))),
+      ('edge_int1',      'edge_int2-other', (True,  False, (1, 0))),
+      ('edge_int1-rot1', 'edge_int2',       (True,  False, (0, 1))),
+      ('edge_int1-rot2', 'edge_int2',       (True,  False, (2, 1))),
+      ('edge_int1-rot2', 'edge_int2-other', (True,  False, (2, 0))),
+
+      ('h_edge_int1',    'h_edge_int2',     (True,  False, (2, 0))),
+      ('v_edge_int1',    'v_edge_int2',     (True,  False, (2, 0))),
+
+      ('unit-pentagon',  'intersect-pent4', (True,  True,  None)),
+      ('unit-pentagon',  'intersect-pent5', (True,  True,  None)),
     ]
+
+    flip3 = lambda t: t if (t[2] is None) else (t[0], t[1], (t[2][1], t[2][0]))
+
     for i1, i2, r in cases:
       with self.subTest(polyName1 = i1, polyName2 = i2):
         poly1 = self._test_polygons[i1]
         poly2 = self._test_polygons[i2]
         self.assertEqual(g.do_convex_polygons_intersect(poly1, poly2), r)
-        self.assertEqual(g.do_convex_polygons_intersect(poly2, poly1), r)
+        self.assertEqual(g.do_convex_polygons_intersect(poly2, poly1), flip3(r))
 
-  @skip('not fully implemented yet')
   def test_do_convex_polygons_intersect_exceptions(self):
     cases = [
+      ('unit-pentagon', 'non-convex-quad', ValueError),
     ]
     for i1, i2, ex in cases:
       with self.subTest(polyName1 = i1, polyName2 = i2):
