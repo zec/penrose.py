@@ -186,7 +186,12 @@ class Number:
     if isinstance(e0, Number):
       self._vec = e0._vec
     else:
-      self._vec = (Q(e0), Q(e1), Q(e2), Q(e3))
+      self._vec = (
+        e0 if type(e0) is Q else Q(e0),
+        e1 if type(e1) is Q else Q(e1),
+        e2 if type(e2) is Q else Q(e2),
+        e3 if type(e3) is Q else Q(e3)
+      )
 
   def __repr__(self):
     return 'Number({}, {}, {}, {})'.format(*(repr(q) for q in self._vec))
