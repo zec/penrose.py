@@ -307,11 +307,15 @@ class LineSegment:
 
   def __init__(self, begin, end):
     if isinstance(begin, Point) and isinstance(end, Point):
-      if begin == end:
-        raise ValueError
-      self.begin, self.end, self.direction = begin, end, end - begin
+      pass
+    elif isinstance(begin, Point) and isinstance(end, Vector):
+      begin, end = begin, begin + end
     else:
       raise TypeError
+
+    if begin == end:
+      raise ValueError
+    self.begin, self.end, self.direction = begin, end, end - begin
 
   def __eq__(self, other):
     if not isinstance(other, LineSegment):
@@ -376,6 +380,20 @@ class Rectangle:
            (self.min_y == other.min_y) and \
            (self.max_y == other.max_y)
 
+  def __repr__(self):
+    ty = type(self)
+    return '{}.Rectangle({}, {}, {}, {})'.format(
+      ty.__module__,
+      repr(self.min_x), repr(self.min_y),
+      repr(self.max_x), repr(self.max_y)
+    )
+
+  def __str__(self):
+    return '<Rectangle x=[{},{}], y=[{},{}]>'.format(
+      self.min_x, self.max_x,
+      self.min_y, self.max_y
+    )
+
   def bbox(self):
     return self
 
@@ -415,14 +433,19 @@ class Polygon:
   def __init__(self, *vertices):
     if len(vertices) == 0:
       raise ValueError
-    if len(vertices) == 1 and _is_iterable(vertices[0]):
-      vertices = list(vertices[0])
-    if not all(isinstance(pt, Point) for pt in vertices):
+    elif len(vertices) == 1 and not isinstance(vertices[0], Point):
+      # Try to use as an iterable - if an error is thrown by
+      # iter() or list(), then it isn't an iterable
+      v = list(iter(vertices[0]))
+    else:
+      v = vertices
+
+    if not all(isinstance(pt, Point) for pt in v):
       raise TypeError
-    if len(vertices) < 3: # polygon needs at least three vertices
+    if len(v) < 3: # polygon needs at least three vertices
       raise ValueError
 
-    self._v = tuple(vertices)
+    self._v = tuple(v)
     self._e, self._is_convex, self._bbox = None, None, None
 
   def vertices(self):
@@ -435,16 +458,25 @@ class Polygon:
       self._e = tuple(LineSegment(v[i], v[(i+1)%l]) for i in range(l))
     return self._e
 
+  def transform(self, trans):
+    if trans.det() == 0:
+      return ValueError
+    return Polygon(trans @ pt for pt in self._v)
+
+  def __rmatmul__(self, other):
+    if not isinstance(other, AffineTransform):
+      return NotImplemented
+    return self.transform(other)
+
   def is_convex(self):
     if self._is_convex is None:
-      raise NotImplementedError
       # A simply-connected polygon is convex iff all its interior angles are
       # less than or equal to 180 degrees, which in turn is the case iff
       # the polygon always "turns" the same direction (left or right) at
       # every vertex.
       # We don't support vertices within straight-line segments, so we don't
       # have to worry about the 180 degree condition, so:
-      edges = self._e
+      edges = self.edges()
       sgn_turn = (edges[-1].direction ^ edges[0].direction).sgn()
       if sgn_turn == 0:
         raise ValueError
@@ -460,7 +492,7 @@ class Polygon:
       min_x = min(pt.x for pt in v)
       max_x = max(pt.x for pt in v)
       min_y = min(pt.y for pt in v)
-      max_y = min(pt.y for pt in v)
+      max_y = max(pt.y for pt in v)
       self._bbox = Rectangle(min_x, min_y, max_x, max_y)
     return self._bbox
 
@@ -481,14 +513,24 @@ class Polygon:
 # [1] https://jeffe.cs.illinois.edu/teaching/comptop/2017/chapters/01-simple-polygons.pdf
 # [2] https://doi.org/10.1016/S0925-7721(01)00012-8
 
-# Helper function; returns -1 is pt lies directly below the segment (r, s),
+# Helper function; returns -1 is pt lies directly below the segment-minus-a-point [r, s)
+# (except when (r, s) is vertical),
 # 0 if pt is exactly on (r, s), and +1 otherwise.
 def _on_or_below(pt, r, s):
-  if r.x < s.x:
-    r, s = s, r
-  if (pt.x < s.x) or (pt.x >= r.x):
-    return 1
-  return ((s-r) ^ (pt-r)).sgn()
+  if pt == r or pt == s:
+    return 0
+  if r.x != s.x:  # normal case: non-vertical line
+    if r.x > s.x:
+      r, s = s, r
+    if (pt.x < r.x or pt.x >= s.x):
+      return 1
+    return ((s-r) ^ (pt-r)).sgn()
+  else:           # special case: vertical line
+    if pt.x != r.x:
+      return 1
+    if r.y > s.y:
+      r, s = s, r
+    return int(not (r.y <= pt.y and pt.y <= s.y))
 
 def point_in_polygon(pt, poly):
   '''Returns whether Point pt is inside (+1), outside (-1) or on the
@@ -546,19 +588,19 @@ def do_convex_polygons_intersect(A, B):
 
   edge_meetings = False
 
-  for i in range(2):
-    for n in edge_normals:
-      proj_A = [n | v for v in A_v]
-      proj_B = [n | v for v in B_v]
-      min_A, max_A = min(proj_A), max(proj_A)
-      min_B, max_B = min(proj_B), max(proj_B)
+  for n in edge_normals:
+    proj_A = [v | n for v in A_v]
+    proj_B = [v | n for v in B_v]
+    min_A, max_A = min(proj_A), max(proj_A)
+    min_B, max_B = min(proj_B), max(proj_B)
 
-      # Is no overlap between [min_A, max_A] and [min_B, max_B] for some n,
-      # these polygons don't touch anywhere.
-      if (max_A < min_B) or (max_B < min_A):
-        return (False, False, None)
-      if (max_A == min_B) or (max_B == min_A):
-        edge_meetings = True
+    # If no overlap between [min_A, max_A] and [min_B, max_B] for some n,
+    # these polygons don't touch anywhere.
+    if (max_A < min_B) or (max_B < min_A):
+      return (False, False, None)
+
+    if (max_A == min_B) or (max_B == min_A):
+      edge_meetings = True
 
   # If we get here, one of two cases occurs:
   # (1) areal overlap between A and B, in which case there is more than just
