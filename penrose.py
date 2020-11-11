@@ -7,6 +7,7 @@ from pen_geom import Point, Vector, AffineTransform, Polygon
 
 class TileWithMatchingRule:
   def __init__(self):
+    self.__bbox = None
     self.__hash = None
 
   def vertices(self):
@@ -35,6 +36,14 @@ class TileWithMatchingRule:
     (2) the union of the *interiors* of the polygons is point-for-point
     equal to the interior of the tile'''
     raise NotImplementedError
+
+  def bbox(self):
+    '''Returns a Rectangle that contains the entirety of the tile.'''
+    if self.__bbox is not None:
+      return self.__bbox
+    bb = Polygon(self.vertices()).bbox()
+    self.__bbox = bb
+    return bb
 
   def __str__(self):
     ts, v, mr = self.tile_set(), self.vertices(), self.matching_rules()

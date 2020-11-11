@@ -316,8 +316,9 @@ class LineSegment:
 
     if begin == end:
       raise ValueError
+
     self.begin, self.end, self.direction = begin, end, end - begin
-    self._min_max = (begin, end) if (begin.x, begin.y) < (end.x, end.y) else (end, begin)
+    self._min, self._max = (begin, end) if (begin.x, begin.y) < (end.x, end.y) else (end, begin)
 
   def __eq__(self, other):
     if not isinstance(other, LineSegment):
@@ -361,7 +362,7 @@ class LineSegment:
 
   def contains_point(self, other):
     ls_dir = self.direction
-    s_min, s_max = self._min_max
+    s_min, s_max = self._min, self._max
 
     if ls_dir.y.sgn() == 0:
       return other.y == s_min.y and s_min.x <= other.x and other.x <= s_max.x
@@ -381,8 +382,8 @@ class LineSegment:
       return False
 
     # OK, so they're collinear. Let's see if there's overlap of non-zero length:
-    s_min, s_max = self._min_max
-    o_min, o_max = other._min_max
+    s_min, s_max = self._min,  self._max
+    o_min, o_max = other._min, other._max
 
     if self.direction.x.sgn() == 0:
       return s_min.y < o_max.y and o_min.y < s_max.y
@@ -394,19 +395,22 @@ class Rectangle:
 
   def __init__(self, p1, p2, x2=None, y2=None):
     if isinstance(p1, Point) and isinstance(p2, Point):
-      self._populate_self(p1, p2)
+      pass
     elif isinstance(p1, Point) and isinstance(p2, Vector):
-      self._populate_self(p1, p1 + p2)
+      p2 = p1 + p2
     elif isinstance(p2, Point) and isinstance(p1, Vector):
-      self._populate_self(p2, p2 + p1)
+      p1 = p2 + p1
     elif all(_is_valid_number(i) for i in [p1,p2,x2,y2]):
-      self._populate_self(Point(Y(p1), Y(p2)), Point(Y(x2),Y(y2)))
+      self.min_x, self.max_x = (p1, x2) if p1 <= x2 else (x2, p1)
+      self.min_y, self.max_y = (p2, y2) if p2 <= y2 else (y2, p2)
+      return
     else:
       raise TypeError
 
-  def _populate_self(self, p1, p2):
-    self.min_x, self.max_x = min(p1.x, p2.x), max(p1.x, p2.x)
-    self.min_y, self.max_y = min(p1.y, p2.y), max(p1.y, p2.y)
+    xx1, yy1 = p1.x, p1.y
+    xx2, yy2 = p2.x, p2.y
+    self.min_x, self.max_x = (xx1, xx2) if xx1 <= xx2 else (xx2, xx1)
+    self.min_y, self.max_y = (yy1, yy2) if yy1 <= yy2 else (yy2, yy1)
 
   def __eq__(self, other):
     if not isinstance(other, Rectangle):
