@@ -215,6 +215,9 @@ class TransformableTile(TileWithMatchingRule):
   def scale(self, scl):
     return self.transform(pg.scaling(scl))
 
+  def curr_transform(self):
+    return self._t
+
 _origin = Point(0, 0)
 _one_x = Point(1, 0)
 _thick_diag = Vector(1, 0).rotate(4)
