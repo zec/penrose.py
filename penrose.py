@@ -28,6 +28,12 @@ class TileWithMatchingRule:
     any two instances of TileWithMatchingRule may have their rules compared.'''
     raise NotImplementedError
 
+  def decompose(self, decomp_id):
+    '''If decomp_id is recognized, returns a list or tuple of tiles
+    representing a decomposition of self of type decomp_id; if
+    decomp_id is not recognized, returns None'''
+    return None
+
   def tile_set(self):
     '''Returns an ID indicating the tile set this tile belongs to.'''
     raise NotImplementedError
@@ -176,11 +182,20 @@ class TransformableTile(TileWithMatchingRule):
 
   _convex_decomposition = None
 
+  _decompositions = {}
+
   def vertices(self):
     return self._v
 
   def matching_rules(self):
     return self._matching_rules
+
+  def decompose(self, decomp_id):
+    decomp_prototiles = self._decompositions.get(decomp_id, None)
+    if decomp_prototiles is None:
+      return None
+
+    return [pt.transform(self._t) for pt in decomp_prototiles]
 
   def tile_set(self):
     return self._tile_set
@@ -223,8 +238,9 @@ _match_thin = (3, -3, 4, -4)
 class KiteTile(TransformableTile):
   _proto_vertices = proto_kite
   _matching_rules = _match_kite
-  _tile_set = 'P2'
   # Already convex (as are {Thick,Thin}Rhomb), so no need to specify decomposition
+  _decompositions = {}
+  _tile_set = 'P2'
 
 # A point on the dart tile's edge that we can use to reduce it into two
 # triangles with the needed overlap for the convex-polygon decomposition
@@ -235,14 +251,113 @@ class DartTile(TransformableTile):
   _matching_rules = _match_dart
   _additional_proto_points = (_dart_aux_point,)
   _convex_decomposition = ((0, 1, -1), (0, 2, 3))
+  _decompositions = {}
   _tile_set = 'P2'
 
 class ThickRhomb(TransformableTile):
   _proto_vertices = proto_thick
   _matching_rules = _match_thick
+  _decompositions = {}
   _tile_set = 'P3'
 
 class ThinRhomb(TransformableTile):
   _proto_vertices = proto_thin
   _matching_rules = _match_thin
+  _decompositions = {}
   _tile_set = 'P3'
+
+# Robinson's A- and B- tiles; coordinates chosen to make
+# conversions between P2 <-> A and P3 <-> B easy
+class A_K1(TransformableTile):
+  _proto_vertices = (proto_kite[0], proto_kite[1], proto_kite[2])
+  _matching_rules = (42, 41, 43)
+  _decompositions = {}
+  _tile_set = 'Robinson A'
+
+class A_K2(TransformableTile):
+  _proto_vertices = (proto_kite[0], proto_kite[2], proto_kite[3])
+  _matching_rules = (-43, -41, -42)
+  _decompositions = {}
+  _tile_set = 'Robinson A'
+
+class A_D1(TransformableTile):
+  _proto_vertices = (proto_dart[0], proto_dart[1], proto_dart[2])
+  _matching_rules = (-42, -41, -44)
+  _decompositions = {}
+  _tile_set = 'Robinson A'
+
+class A_D2(TransformableTile):
+  _proto_vertices = (proto_dart[0], proto_dart[2], proto_dart[3])
+  _matching_rules = (44, 41, 42)
+  _decompositions = {}
+  _tile_set = 'Robinson A'
+
+class B_L1(TransformableTile):
+  _proto_vertices = (proto_thick[0], proto_thick[1], proto_thick[2])
+  _matching_rules = (51, 52, 53)
+  _decompositions = {}
+  _tile_set = 'Robinson B'
+
+class B_L2(TransformableTile):
+  _proto_vertices = (proto_thick[0], proto_thick[2], proto_thick[3])
+  _matching_rules = (-53, -52, -51)
+  _decompositions = {}
+  _tile_set = 'Robinson B'
+
+class B_S1(TransformableTile):
+  _proto_vertices = (proto_thin[0], proto_thin[1], proto_thin[3])
+  _matching_rules = (51, 54, -52)
+  _decompositions = {}
+  _tile_set = 'Robinson B'
+
+class B_S2(TransformableTile):
+  _proto_vertices = (proto_thin[1], proto_thin[2], proto_thin[3])
+  _matching_rules = (-51, 52, -54)
+  _decompositions = {}
+  _tile_set = 'Robinson B'
+
+KiteTile._decompositions['to-A'] = (A_K1(), A_K2())
+DartTile._decompositions['to-A'] = (A_D1(), A_D2())
+
+ThickRhomb._decompositions['to-B'] = (B_L1(), B_L2())
+ThinRhomb._decompositions['to-B']  = (B_S1(), B_S2())
+
+A_K1._decompositions['to-P2'] = (KiteTile(),)
+A_K2._decompositions['to-P2'] = (KiteTile(),)
+A_D1._decompositions['to-P2'] = (DartTile(),)
+A_D2._decompositions['to-P2'] = (DartTile(),)
+
+B_L1._decompositions['to-P3'] = (ThickRhomb(),)
+B_L2._decompositions['to-P3'] = (ThickRhomb(),)
+B_S1._decompositions['to-P3'] = (ThinRhomb(),)
+B_S2._decompositions['to-P3'] = (ThinRhomb(),)
+
+A_K1._decompositions['half-deflation'] = (
+  B_L1(pg.translation(1,0) @ pg.rotation(8) @ pg.scaling(inv_phi)),
+  B_S2(pg.translation(1,0) @ pg.rotation(-4) @ pg.scaling(inv_phi) @ pg.translation(-Vector(proto_thin[2]))),
+)
+A_K2._decompositions['half-deflation'] = (
+  B_L2(pg.rotation(-8) @ pg.scaling(inv_phi) @ pg.translation(-Vector(proto_thick[2]))),
+  B_S1(pg.translation(Vector(proto_kite[3])) @ pg.rotation(-4) @ pg.scaling(inv_phi)),
+)
+A_D1._decompositions['half-deflation'] = (
+  B_L2(pg.rotation(-2) @ pg.scaling(inv_phi)),
+)
+A_D2._decompositions['half-deflation'] = (
+  B_L1(pg.rotation(2) @ pg.scaling(inv_phi)),
+)
+
+B_L1._decompositions['half-deflation'] = (
+  A_K2(pg.rotation(-2)),
+  A_D2(pg.translation(Vector(proto_thick[2])) @ pg.rotation(14)),
+)
+B_L2._decompositions['half-deflation'] = (
+  A_K1(pg.rotation(2)),
+  A_D1(pg.translation(Vector(proto_thick[2])) @ pg.rotation(10)),
+)
+B_S1._decompositions['half-deflation'] = (
+  A_K2(pg.rotation(-2)),
+)
+B_S2._decompositions['half-deflation'] = (
+  A_K1(pg.translation(Vector(proto_thin[2])) @ pg.rotation(10)),
+)
