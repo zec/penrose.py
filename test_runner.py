@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Test runner script. Takes one optional argument: an integer verbosity level.
 
