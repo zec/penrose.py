@@ -86,14 +86,14 @@ tiles = [
   (p.ThickRhomb(), 'to-B', 'thick-to-b'),
   (p.ThinRhomb(),  'to-B', 'thin-to-b'),
 
-  (p.A_K1(), 'half-deflation', 'ak1-hdef'),
-  (p.A_K2(), 'half-deflation', 'ak2-hdef'),
-  (p.A_D1(), 'half-deflation', 'ad1-hdef'),
-  (p.A_D2(), 'half-deflation', 'ad2-hdef'),
-  (p.B_L1(), 'half-deflation', 'bl1-hdef'),
-  (p.B_L2(), 'half-deflation', 'bl2-hdef'),
-  (p.B_S1(), 'half-deflation', 'bs1-hdef'),
-  (p.B_S2(), 'half-deflation', 'bs2-hdef'),
+  (p.A_K1(), 'half-deflation', 'hdef-ak1'),
+  (p.A_K2(), 'half-deflation', 'hdef-ak2'),
+  (p.A_D1(), 'half-deflation', 'hdef-ad1'),
+  (p.A_D2(), 'half-deflation', 'hdef-ad2'),
+  (p.B_L1(), 'half-deflation', 'hdef-bl1'),
+  (p.B_L2(), 'half-deflation', 'hdef-bl2'),
+  (p.B_S1(), 'half-deflation', 'hdef-bs1'),
+  (p.B_S2(), 'half-deflation', 'hdef-bs2'),
 
   (p.A_K1(pg.translation(4,4) @ pg.rotation(4) @ pg.scaling(3)), 'half-deflation', 'ak1_mod-hdef'),
 
@@ -105,6 +105,15 @@ tiles = [
   (p.B_L2(), 'to-P3', 'bl2-to-p3'),
   (p.B_S1(), 'to-P3', 'bs1-to-p3'),
   (p.B_S2(), 'to-P3', 'bs2-to-p3'),
+
+  (p.A_K1(), 'deflation', 'def-ak1'),
+  (p.A_K2(), 'deflation', 'def-ak2'),
+  (p.A_D1(), 'deflation', 'def-ad1'),
+  (p.A_D2(), 'deflation', 'def-ad2'),
+  (p.B_L1(), 'deflation', 'def-bl1'),
+  (p.B_L2(), 'deflation', 'def-bl2'),
+  (p.B_S1(), 'deflation', 'def-bs1'),
+  (p.B_S2(), 'deflation', 'def-bs2'),
 ]
 
 for t, decomp_id, stem in tiles:

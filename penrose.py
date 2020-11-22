@@ -361,3 +361,11 @@ B_S1._decompositions['half-deflation'] = (
 B_S2._decompositions['half-deflation'] = (
   A_K1(pg.translation(Vector(proto_thin[2])) @ pg.rotation(10)),
 )
+
+def _mk_full_deflations():
+  for T in (A_K1, A_K2, A_D1, A_D2, B_L1, B_L2, B_S1, B_S2):
+    tile = T()
+    hd = tile.decompose('half-deflation')
+    T._decompositions['deflation'] = tuple(it.chain( *(tt.decompose('half-deflation') for tt in hd) ))
+
+_mk_full_deflations()
