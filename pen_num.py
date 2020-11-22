@@ -450,3 +450,25 @@ phi = (sqrt5 + 1) * Q(1,2)
 
 # The inverse of the golden ratio, which conveniently is just phi-1
 inv_phi = phi - one
+
+_n0_99 = Number(Q(99,100))
+_n1_01 = Number(Q(101,100))
+_n3half = Q(3,2)
+_n1half = Q(1,2)
+
+def approx_inv_sqrt(x):
+  '''Returns an approximation to 1/sqrt(x) using Newton's method'''
+  x = Number(x)
+  if x.sgn() < 0:
+    raise ValueError
+  if x == 0:
+    return Number(0)
+
+  approx = Q(1)
+  calc_x = 0
+
+  while (calc_x <= _n0_99) or (calc_x >= _n1_01):
+    approx = approx * (_n3half - _n1half * x * approx * approx)
+    calc_x = x * approx * approx
+
+  return approx
