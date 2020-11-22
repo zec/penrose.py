@@ -1,4 +1,4 @@
-import penrose as p, pen_num as pn
+import penrose as p, pen_num as pn, pen_geom as pg
 from collections import defaultdict
 from math import floor, ceil
 
@@ -118,3 +118,14 @@ class TileManager:
       for nt in t.decompose(decomp_id):
         new_tm.add_tile(nt)
     return new_tm
+
+  def bbox(self):
+    if len(self._tiles) == 0:
+      return None
+
+    bboxes = [t.bbox() for t in self._tiles]
+    min_x = min(bb.min_x for bb in bboxes)
+    max_x = max(bb.max_x for bb in bboxes)
+    min_y = min(bb.min_y for bb in bboxes)
+    max_y = max(bb.max_y for bb in bboxes)
+    return pg.Rectangle(min_x, min_y, max_x, max_y)
