@@ -349,7 +349,7 @@ A_D2._decompositions['half-deflation'] = (
 
 B_L1._decompositions['half-deflation'] = (
   A_K2(pg.rotation(-2)),
-  A_D2(pg.translation(Vector(proto_thick[2])) @ pg.rotation(14)),
+  A_D2(pg.translation(Vector(proto_thick[2])) @ pg.rotation(10)),
 )
 B_L2._decompositions['half-deflation'] = (
   A_K1(pg.rotation(2)),
