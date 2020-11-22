@@ -3,12 +3,14 @@
 from fractions import Fraction as Q
 from pen_num import Number as Y, phi, inv_phi
 import pen_geom as pg
-from pen_geom import Point, Vector, AffineTransform, Polygon
+from pen_geom import Point, Vector, AffineTransform, Polygon, LineSegment
+import itertools as it
 
 class TileWithMatchingRule:
   def __init__(self):
     self.__bbox = None
     self.__hash = None
+    self.__edges = None
 
   def vertices(self):
     '''Returns the list of n vertices for the tile,
@@ -44,6 +46,61 @@ class TileWithMatchingRule:
     bb = Polygon(self.vertices()).bbox()
     self.__bbox = bb
     return bb
+
+  def _edges(self):
+    e = self.__edges
+    if e is None:
+      v = self.vertices()
+      n = len(v)
+      e = tuple(LineSegment(v[i], v[(i+1)%n]) for i in range(n))
+      self.__edges = e
+    return e
+
+  def matches(self, other):
+    '''Returns True if the tiles don't overlap or if they overlap at
+    an edge and the matching rules match, or False otherwise.'''
+    if not isinstance(other, TileWithMatchingRule):
+      raise TypeError
+
+    if not pg.do_bboxes_overlap(self.bbox(), other.bbox()): # fast check
+      return True
+
+    edges_possibly_meet = False
+
+    for poly_s in self.convex_decomposition():
+      for poly_o in other.convex_decomposition():
+        result = pg.do_convex_polygons_intersect(poly_s, poly_o)
+        if result[0]: # overlap
+          if result[1]: # overlap of non-zero area
+            return False
+          edge_indices = result[2]
+          if edge_indices is not None: # edge overlap in decomposed polygons
+            edges_possibly_meet = True
+
+    if not edges_possibly_meet:
+      return True
+
+    # So, if we get here, there's overlap between the two tiles,
+    # but of zero area. Let's see what overlap (if any) is edge-to-edge:
+
+    edges_s, edges_o = self._edges(), other._edges()
+    mr_s, mr_o = self.matching_rules(), other.matching_rules()
+
+    for i, e_s in zip(it.count(), edges_s):
+      for j, e_o in zip(it.count(), edges_o):
+        if e_s.significantly_overlaps_with(e_o):
+          # If e_s and e_o overlap, they *must* have the same endpoints,
+          # and have matching rules that are negatives of each other.
+          # Since both sets of vertices are enumerated in CCW order,
+          # if the endpoints are the same, they'll be in opposite order in
+          # self and other.
+          if e_s.begin != e_o.end or e_s.end != e_o.begin or mr_s[i] != -mr_o[j]:
+            return False
+          # No other e_o will overlap e_s, so we can skip the rest of the innermost loop:
+          break
+
+    # If we get *here*, all edge pairs that overlap matched successfully:
+    return True
 
   def __str__(self):
     ts, v, mr = self.tile_set(), self.vertices(), self.matching_rules()
