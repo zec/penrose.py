@@ -353,6 +353,12 @@ class Number:
       # or negative yet. We start another iteration,
       # using a tighter bound on self.
 
+  def __abs__(self):
+    if self.sgn() >= 0:
+      return self
+    else:
+      return -self
+
   def __lt__(self, other):
     return (self - other).sgn() < 0
 
@@ -456,6 +462,20 @@ _n1_01 = Number(Q(101,100))
 _n3half = Q(3,2)
 _n1half = Q(1,2)
 
+def nearby_power_of_2(x):
+  x = Number(x)
+  if x <= 0:
+    raise ValueError
+  if x >= 1:
+    pow2 = Q(1)
+    while pow2 < x:
+      pow2 *= 2
+  else:
+    pow2 = Q(1,2)
+    while pow2 > x:
+      pow2 /= 2
+  return pow2
+
 def approx_inv_sqrt(x):
   '''Returns an approximation to 1/sqrt(x) using Newton's method'''
   x = Number(x)
@@ -464,11 +484,16 @@ def approx_inv_sqrt(x):
   if x == 0:
     return Number(0)
 
-  approx = Q(1)
+  # Get an initial approximation using floating-point arithmetic
+  approx = Q(1 / sqrt(float(x)))
   calc_x = 0
 
   while (calc_x <= _n0_99) or (calc_x >= _n1_01):
-    approx = approx * (_n3half - _n1half * x * approx * approx)
+    approx = abs(approx * (_n3half - _n1half * x * approx * approx))
+    # Get a close approximation with (hopefully) smaller denominator
+    pow2 = nearby_power_of_2(approx)
+    a_tmp = int(approx * (10000 / pow2))
+    approx = a_tmp / (10000 / pow2)
     calc_x = x * approx * approx
 
   return approx
