@@ -1,4 +1,5 @@
-import re, math, itertools
+import re, math, itertools, penrose, pen_num
+from fractions import Fraction
 from pen_geom import Point
 from collections import defaultdict
 
@@ -148,3 +149,95 @@ def tiling_to_svg_path(tiling, precision):
     last_pt = next_pt
 
   return ''.join(path)
+
+def tiling_arcs_svg(tiling, precision):
+  fmt = DecimalFormatter(precision)
+  arc_set1, arc_set2 = [], []
+  inv_phi, one_minus_inv_phi = pen_num.inv_phi, 1 - pen_num.inv_phi
+  inv_phi2 = pen_num.inv_phi * pen_num.inv_phi
+  inv_phi_minus_inv_phi2 = inv_phi - inv_phi2
+  half_inv_phi = Fraction(1,2) * inv_phi
+  one_minus_half_inv_phi = 1 - half_inv_phi
+
+  # The following code makes exquisite use of what *should* be
+  # internal details of the four tile types in question.
+  v0 = tiling.get_tiles()[0].vertices()
+  rev = v0[1] - v0[0] # "represetative edge vector"
+  rev_len_squared = (rev.x * rev.x) + (rev.y * rev.y)
+  rev_inv_len = pen_num.Number(pen_num.approx_inv_sqrt(rev_len_squared))
+  edge_approx_len = pen_num.approx_inv_sqrt(rev_inv_len * rev_inv_len)
+
+  def make_arcs(second_arc_sense = 0):
+    nonlocal arc1_start, arc1_end, rad1, arc_set1
+    nonlocal arc2_start, arc2_end, rad2, arc_set2
+    nonlocal fmt
+
+    r1, r2 = fmt.approx(rad1), fmt.approx(rad2)
+
+    arc_set1.append('M{} {}'.format(
+      fmt.approx(arc1_start.x),
+      fmt.approx(arc1_start.y)
+    ))
+    arc_set1.append('A{} {} 0 0 1 {} {}'.format(
+      r1, r1,
+      fmt.approx(arc1_end.x),
+      fmt.approx(arc1_end.y)
+    ))
+
+    arc_set2.append('M{} {}'.format(
+      fmt.approx(arc2_start.x),
+      fmt.approx(arc2_start.y)
+    ))
+    arc_set2.append('A{} {} 0 {} 1 {} {}'.format(
+      r2, r2,
+      second_arc_sense,
+      fmt.approx(arc2_end.x),
+      fmt.approx(arc2_end.y)
+    ))
+
+  for t in tiling.get_tiles():
+    ty, vs = type(t), t.vertices()
+    if ty is penrose.KiteTile:
+      arc1_start = vs[0] + inv_phi * (vs[1]-vs[0])
+      arc1_end   = vs[0] + inv_phi * (vs[3]-vs[0])
+      rad1 = inv_phi * edge_approx_len
+
+      arc2_start = vs[2] + inv_phi * (vs[3]-vs[2])
+      arc2_end   = vs[2] + inv_phi * (vs[1]-vs[2])
+      rad2 = inv_phi2 * edge_approx_len
+
+      make_arcs()
+    elif ty is penrose.DartTile:
+      arc1_start = vs[0] + one_minus_inv_phi * (vs[1]-vs[0])
+      arc1_end   = vs[0] + one_minus_inv_phi * (vs[3]-vs[0])
+      rad1 = one_minus_inv_phi * edge_approx_len
+
+      arc2_start = vs[2] + one_minus_inv_phi * (vs[3]-vs[2])
+      arc2_end   = vs[2] + one_minus_inv_phi * (vs[1]-vs[2])
+      rad2 = inv_phi_minus_inv_phi2 * edge_approx_len
+
+      make_arcs(1)
+    elif ty is penrose.ThickRhomb:
+      arc1_start = vs[0] + one_minus_half_inv_phi * (vs[1]-vs[0])
+      arc1_end   = vs[0] + one_minus_half_inv_phi * (vs[3]-vs[0])
+      rad1 = one_minus_half_inv_phi * edge_approx_len
+
+      arc2_start = vs[2] + half_inv_phi * (vs[3]-vs[2])
+      arc2_end   = vs[2] + half_inv_phi * (vs[1]-vs[2])
+      rad2 = half_inv_phi * edge_approx_len
+
+      make_arcs()
+    elif ty is penrose.ThinRhomb:
+      arc1_start = vs[1] + half_inv_phi * (vs[2]-vs[1])
+      arc1_end   = vs[1] + half_inv_phi * (vs[0]-vs[1])
+      rad1       = half_inv_phi * edge_approx_len
+
+      arc2_start = vs[3] + half_inv_phi * (vs[0]-vs[3])
+      arc2_end   = vs[3] + half_inv_phi * (vs[2]-vs[3])
+      rad2       = rad1
+
+      make_arcs()
+    else:
+      raise ValueError
+
+  return { 'type1': ''.join(arc_set1), 'type2': ''.join(arc_set2) }
