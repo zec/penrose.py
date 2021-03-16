@@ -65,20 +65,6 @@ def write_decomp_svg(main_tile, decomp_tile, fname):
     f.write('</g>\n')
     f.write('</svg>\n')
 
-#write_decomp_svg(p.KiteTile(), p.DartTile(), 'dc-test01.svg')
-#class X:
-#  def vertices(self):
-#    return (pg.Point(-1,-1), pg.Point(1,-1), pg.Point(1,1), pg.Point(-1,1))
-#  def bbox(self):
-#    return pg.Rectangle(-1, -1, 1, 1)
-#class Y:
-#  def vertices(self):
-#    return (pg.Point(0,0), pg.Point(1,0), pg.Point(1,1))
-#  def matching_rules(self):
-#    return (1, -2, 3)
-#  def bbox(self):
-#    return pg.Rectangle(0, 0, 1, 1)
-#write_decomp_svg(X(), Y(), 'dc-test02.svg')
 
 tiles = [
   (p.KiteTile(),   'to-A', 'kite-to-a'),
