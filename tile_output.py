@@ -1,3 +1,5 @@
+# MIT-licensed; see LICENSE for details
+
 import re, math, itertools, penrose, pen_num
 from fractions import Fraction
 from pen_geom import Point

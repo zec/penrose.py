@@ -1,5 +1,7 @@
 '''A module to work with the Penrose tilings P2 (kites and darts) and P3 (rhombs)'''
 
+# MIT-licensed; see LICENSE for details
+
 from fractions import Fraction as Q
 from pen_num import Number as Y, phi, inv_phi
 import pen_geom as pg

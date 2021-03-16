@@ -1,5 +1,7 @@
 '''Geometric objects and manipulations using the number field pen_num.Number'''
 
+# MIT-licensed; see LICENSE for details
+
 from fractions import Fraction as Q
 import pen_num
 from pen_num import Number as Y

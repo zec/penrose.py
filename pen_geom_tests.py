@@ -1,3 +1,5 @@
+# MIT-licensed; see LICENSE for details
+
 from unittest import TestCase, skip
 import pen_geom as g
 from fractions import Fraction as Q

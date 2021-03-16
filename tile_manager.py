@@ -1,3 +1,5 @@
+# MIT-licensed; see LICENSE for details
+
 import penrose as p, pen_num as pn, pen_geom as pg
 from collections import defaultdict
 from math import floor, ceil

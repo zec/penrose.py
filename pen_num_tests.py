@@ -1,3 +1,5 @@
+# MIT-licensed; see LICENSE for details
+
 from unittest import TestCase, skip
 from fractions import Fraction as Q
 import pen_num

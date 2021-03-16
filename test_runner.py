@@ -2,6 +2,8 @@
 
 # Test runner script. Takes one optional argument: an integer verbosity level.
 
+# MIT-licensed; see LICENSE for details
+
 import pen_num_tests, pen_geom_tests
 
 modules_to_test = [

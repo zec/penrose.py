@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# MIT-licensed; see LICENSE for details
+
 import penrose
 from tile_manager import TileManager
 import tile_output as to

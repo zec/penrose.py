@@ -1,6 +1,8 @@
 '''The number field Q[sqrt(2*(5+sqrt(5)))] -
 a useful field to work in when handling Penrose tiles'''
 
+# MIT-licensed; see LICENSE for details
+
 from fractions import Fraction as Q
 from math import sqrt, floor, ceil
 

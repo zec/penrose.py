@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# MIT-licensed; see LICENSE for details
+
 import itertools as it
 from fractions import Fraction as Q
 import penrose as p
