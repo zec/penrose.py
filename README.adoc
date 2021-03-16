@@ -1,0 +1,59 @@
+= penrose.py
+:wiki: https://en.wikipedia.org/wiki/Penrose_tiling
+
+This repository contains several Python 3 modules for building and
+manipulating link:{wiki}[Penrose tilings]. For now, only the
+kite-and-dart (P2) and rhombus (P3) tilings are supported (as well as the
+associated Robinson A and B tilings), but it should be fairly easy to add
+support for the P1 tiling as well.
+
+*NOTE:* I (Zachary Catlin)
+do not intend to work on this further, package this for PyPI, etc.
+If you're interested in developing this further, please feel free to fork this
+repository.
+
+This is extracted from a private project of mine; as there's nothing
+particularly secret about the code I wrote,
+I'm posting it in case someone else would find it useful.
+
+The main show is in the following modules, listed by increasing level of
+abstraction:
+
+* `pen_num` &ndash; the class `Number` is an implementation of the number field
+&#x211a;[&#x221a;(10+2&#x221a;5)], which allows for _exact_ representation
+of tile coordinates and rotation matrices.
+
+* `pen_geom` &ndash; geometric primitives&mdash;e.g., points, line segments,
+affine transforms&mdash;and operations and predicates involving these
+primitives. Uses `pen_num.Number` to represent coordinates and other numeric
+values.
+
+* `penrose` &ndash; contains a class to represent a tile with a matching rule;
+subclasses implement the tiles of the P2, P3, A, &amp; B tilings.
+
+* `tile_manager` &ndash; a container for managing a set of positioned tiles,
+including making sure that intersection and edge-matching constraints are
+obeyed, as well as supporting whole-tiling manipulations like deflation.
+
+* `tile_output` &ndash; helper functions for outputting a tiling as SVG paths.
+
+Also, there are several accessory modules and scripts:
+
+* `pen_num_tests`, `pen_geom_tests`, and `test_runner.py` &ndash; test suite
+for the lower-level modules.
+
+* `decomp_check.py` &ndash; a script I used to graphically
+verify several of the tile decompositions.
+
+* `deflate_sun.py` &ndash; a script that starts with a P2 sun vertex figure
+and proceeds to repeatedly deflate it, writing out SVG images of each step.
+The output of this script is what I wrote these modules for in the first
+place.
+
+As it stands (March 2021), this code works well, but works
+_slowly_&mdash;running `deflate_sun.py` takes several hours on my vintage-2015
+laptop. From profiling runs, the major culprit appears to be the enormous
+number of memory allocations/deallocations needed: a `pen_num.Number` is
+a composite object of composite objects.
+Streamlining `Number`'s layout or rewriting it in a
+compiled language are probably your best bets for making this run faster.
