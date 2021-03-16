@@ -21,7 +21,8 @@ abstraction:
 
 * `pen_num` &ndash; the class `Number` is an implementation of the number field
 &#x211a;[&#x221a;(10+2&#x221a;5)], which allows for _exact_ representation
-of tile coordinates and rotation matrices.
+of tile coordinates (for the tile sets in question) and rotation matrices for
+multiples of 18&deg; (also relevant for the tile sets in question).
 
 * `pen_geom` &ndash; geometric primitives&mdash;e.g., points, line segments,
 affine transforms&mdash;and operations and predicates involving these
@@ -55,5 +56,5 @@ _slowly_&mdash;running `deflate_sun.py` takes several hours on my vintage-2015
 laptop. From profiling runs, the major culprit appears to be the enormous
 number of memory allocations/deallocations needed: a `pen_num.Number` is
 a composite object of composite objects.
-Streamlining `Number`'s layout or rewriting it in a
+Streamlining the layout of `Number` or rewriting it in a
 compiled language are probably your best bets for making this run faster.
